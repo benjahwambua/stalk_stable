@@ -239,343 +239,132 @@ $remainingAttempts = max(0, MAX_LOGIN_ATTEMPTS - (int) ($_SESSION['login_attempt
     <meta name="description" content="Sign in to Stalk & Stable - Alcohol distributor management system">
     <meta name="theme-color" content="#004a99">
     <title>Sign in | Stalk &amp; Stable</title>
-    <link rel="stylesheet" href="../assets/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* ============================================================================
-           Authentication Pages - Auth Styles
-           ============================================================================ */
+        :root {
+            --primary-color: #004a99;
+            --primary-dark: #002d5c;
+            --accent-color: #00d4ff;
+            --accent-glow: rgba(0, 212, 255, 0.42);
+            --brand: #315c2b;
+            --brand-dark: #203d1d;
+            --brand-light: #4a7d3f;
+            --danger: #dc2626;
+            --warning: #b45309;
+            --soft-white: #f8fbff;
+            --border: #dbe7f3;
+            --muted: #64748b;
+            --muted-light: #94a3b8;
+        }
 
-        .auth-page {
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--primary-dark);
+            background-image: radial-gradient(circle at 50% 50%, #2c3e50 0%, #1a2a3a 100%);
+            font-family: 'Segoe UI', 'Inter', Roboto, -apple-system, BlinkMacSystemFont, sans-serif;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: linear-gradient(135deg, #004a99 0%, #002d5c 50%, #315c2b 100%);
-            padding: var(--space-lg);
-            overflow-y: auto;
+            padding: 20px;
         }
 
-        .auth-shell {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: var(--space-2xl);
-            max-width: 1200px;
-            width: 100%;
-            align-items: center;
-        }
-
-        /* ============================================================================
-           Auth Intro Section
-           ============================================================================ */
-        .auth-intro {
-            color: #ffffff;
-            display: flex;
-            flex-direction: column;
-            gap: var(--space-xl);
-        }
-
-        .brand-block {
-            display: flex;
-            align-items: center;
-            gap: var(--space-lg);
-            margin-bottom: var(--space-lg);
-        }
-
-        .brand-mark {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 64px;
-            height: 64px;
-            background: rgba(255, 255, 255, 0.15);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: var(--radius-lg);
-            font-size: 1.5rem;
-            font-weight: var(--font-weight-extrabold);
-            color: #00d4ff;
-            backdrop-filter: blur(10px);
-        }
-
-        .brand-block h1 {
-            color: #ffffff;
-            margin: 0;
-            font-size: 2rem;
-            font-weight: var(--font-weight-extrabold);
-        }
-
-        .brand-block .eyebrow {
-            opacity: 0.8;
-            font-size: 0.875rem;
-            font-weight: var(--font-weight-semibold);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin: 0;
-        }
-
-        .auth-intro .eyebrow {
-            opacity: 0.8;
-            font-size: 0.875rem;
-            font-weight: var(--font-weight-semibold);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin: 0;
-        }
-
-        .auth-intro h2 {
-            color: #ffffff;
-            font-size: 1.5rem;
-            margin: 0;
-            line-height: 1.4;
-        }
-
-        .auth-intro p {
-            opacity: 0.9;
-            font-size: 1rem;
-            line-height: 1.6;
-            margin: 0;
-        }
-
-        /* ============================================================================
-           Auth Login Card
-           ============================================================================ */
-        .login-card {
-            background: var(--panel);
-            border-radius: var(--radius-2xl);
-            padding: var(--space-2xl);
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
-            display: flex;
-            flex-direction: column;
-            gap: var(--space-lg);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .login-card .eyebrow {
-            color: var(--muted);
-            font-size: 0.875rem;
-            font-weight: var(--font-weight-semibold);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin: 0;
-        }
-
-        .login-card h2 {
-            color: var(--ink);
-            font-size: 1.5rem;
-            margin: 0;
-        }
-
-        .login-card form {
-            display: flex;
-            flex-direction: column;
-            gap: var(--space-lg);
-        }
-
-        .login-card label {
-            display: block;
-            font-weight: var(--font-weight-semibold);
-            color: var(--ink);
-            font-size: 0.95rem;
-            margin-bottom: var(--space-sm);
-        }
-
-        .login-card input[type="text"],
-        .login-card input[type="password"],
-        .login-card input[type="email"] {
-            width: 100%;
-            padding: var(--space-md) var(--space-lg);
-            border: 2px solid var(--border);
-            border-radius: var(--radius-lg);
-            font-size: 1rem;
-            font-family: inherit;
-            background: var(--bg-light);
-            color: var(--ink);
-            transition: all var(--transition-base);
-        }
-
-        .login-card input[type="text"]:focus,
-        .login-card input[type="password"]:focus,
-        .login-card input[type="email"]:focus {
-            outline: none;
-            border-color: #004a99;
-            background: var(--panel);
-            box-shadow: 0 0 0 3px rgba(0, 74, 153, 0.1);
-        }
-
-        .login-card input::placeholder {
-            color: var(--muted-light);
-        }
-
-        .login-card input:disabled {
-            background: var(--bg);
-            color: var(--muted);
-            cursor: not-allowed;
-        }
-
-        /* ============================================================================
-           Auth Buttons
-           ============================================================================ */
-        .auth-submit {
-            padding: var(--space-md) var(--space-lg);
-            background: linear-gradient(135deg, #004a99, #075fc2);
-            color: #ffffff;
-            border: none;
-            border-radius: var(--radius-lg);
-            font-size: 1rem;
-            font-weight: var(--font-weight-semibold);
-            cursor: pointer;
-            transition: all var(--transition-base);
-            text-transform: none;
-            letter-spacing: 0;
-            min-height: 48px;
+        .login-container {
+            min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-top: var(--space-md);
+            width: 100%;
         }
 
-        .auth-submit:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 24px rgba(0, 74, 153, 0.3);
+        .login-box {
+            background: #ffffff;
+            display: flex;
+            width: 1050px;
+            max-width: 100%;
+            border-radius: 30px;
+            overflow: hidden;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.4);
+            animation: slideIn 0.6s ease-out;
         }
 
-        .auth-submit:active:not(:disabled) {
-            transform: translateY(0);
-        }
-
-        .auth-submit:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
-        .auth-submit:focus-visible {
-            outline: 2px solid #00d4ff;
-            outline-offset: 2px;
-        }
-
-        /* ============================================================================
-           Form Alerts
-           ============================================================================ */
-        .form-alert {
-            padding: var(--space-md) var(--space-lg);
-            border-radius: var(--radius-lg);
-            font-size: 0.95rem;
-            line-height: 1.5;
-            border-left: 4px solid #dc2626;
-            background: rgba(220, 38, 38, 0.05);
-            color: #991b1b;
-        }
-
-        .form-alert.warning {
-            border-left-color: #b45309;
-            background: rgba(180, 83, 9, 0.05);
-            color: #78350f;
-        }
-
-        .form-alert p {
-            margin: 0;
-        }
-
-        .form-alert p:not(:last-child) {
-            margin-bottom: var(--space-sm);
-        }
-
-        /* ============================================================================
-           Auth Help & Support Text
-           ============================================================================ */
-        .auth-help {
-            text-align: center;
-            color: var(--muted);
-            font-size: 0.9rem;
-            margin: var(--space-md) 0 0;
-            padding-top: var(--space-md);
-            border-top: 1px solid var(--border-light);
-        }
-
-        /* ============================================================================
-           Responsive Design - Tablet
-           ============================================================================ */
-        @media (max-width: 1024px) {
-            .auth-shell {
-                grid-template-columns: 1fr;
-                gap: var(--space-xl);
-            }
-
-            .auth-intro {
-                text-align: center;
-                margin-bottom: var(--space-lg);
-            }
-
-            .brand-block {
-                justify-content: center;
-                margin-bottom: 0;
-            }
-        }
-
-        /* ============================================================================
-           Responsive Design - Mobile
-           ============================================================================ */
-        @media (max-width: 640px) {
-            .auth-page {
-                padding: var(--space-md);
-                min-height: auto;
-            }
-
-            .auth-shell {
-                grid-template-columns: 1fr;
-                gap: var(--space-lg);
-                max-width: 100%;
-            }
-
-            .login-card {
-                padding: var(--space-lg);
-                gap: var(--space-md);
-            }
-
-            .login-card h2 {
-                font-size: 1.25rem;
-            }
-
-            .auth-intro {
-                display: none;
-            }
-
-            .brand-block {
-                display: none;
-            }
-
-            .login-card label {
-                font-size: 0.9rem;
-            }
-
-            .login-card input[type="text"],
-            .login-card input[type="password"],
-            .login-card input[type="email"] {
-                padding: var(--space-md);
-                font-size: 16px;
-            }
-
-            .auth-submit {
-                min-height: 44px;
-                padding: var(--space-md);
-            }
-
-            .form-alert {
-                padding: var(--space-md);
-                font-size: 0.9rem;
-            }
-
-            .auth-help {
-                font-size: 0.85rem;
-            }
-        }
-
-        /* ============================================================================
-           Loading & Transitions
-           ============================================================================ */
-        @keyframes fadeIn {
+        @keyframes slideIn {
             from {
                 opacity: 0;
-                transform: translateY(10px);
+                transform: translateY(20px) scale(0.98);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* Brand Side */
+        .login-brand {
+            background: linear-gradient(135deg, var(--primary-color), #0075d9);
+            width: 50%;
+            padding: 70px 40px;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .logo-placeholder {
+            background: white;
+            padding: 35px;
+            border-radius: 50%;
+            margin-bottom: 30px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            animation: fadeInDown 0.8s ease-out;
+            width: 160px;
+            height: 160px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo-img {
+            width: 140px;
+            height: auto;
+        }
+
+        .brand-name {
+            font-size: 3rem;
+            letter-spacing: 3px;
+            font-weight: 800;
+            margin-bottom: 5px;
+        }
+
+        .brand-sub {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+
+        .brand-divider {
+            border-top: 2px solid rgba(255, 255, 255, 0.2);
+            width: 60%;
+            margin: 25px 0;
+        }
+
+        .brand-tagline {
+            font-size: 1.2rem;
+            font-style: italic;
+            font-weight: 300;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
             }
             to {
                 opacity: 1;
@@ -583,28 +372,307 @@ $remainingAttempts = max(0, MAX_LOGIN_ATTEMPTS - (int) ($_SESSION['login_attempt
             }
         }
 
-        .login-card {
-            animation: fadeIn 0.4s ease-out;
+        /* Form Side */
+        .login-form-section {
+            width: 50%;
+            padding: 60px;
+            background-color: var(--soft-white);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
 
-        /* ============================================================================
-           High contrast mode support
-           ============================================================================ */
-        @media (prefers-contrast: more) {
-            .login-card input[type="text"],
-            .login-card input[type="password"],
-            .login-card input[type="email"] {
-                border-width: 3px;
-            }
+        .form-header {
+            margin-bottom: 30px;
+        }
 
-            .form-alert {
-                border-left-width: 6px;
+        .form-header h2 {
+            font-size: 1.75rem;
+            color: var(--primary-dark);
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .form-header p {
+            color: var(--muted);
+            font-size: 0.95rem;
+        }
+
+        .alert {
+            border-radius: 15px;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
             }
         }
 
-        /* ============================================================================
-           Reduced motion support
-           ============================================================================ */
+        .alert-danger {
+            background: rgba(220, 38, 38, 0.05);
+            border: 1px solid rgba(220, 38, 38, 0.2);
+            color: #991b1b;
+        }
+
+        .alert-warning {
+            background: rgba(180, 83, 9, 0.05);
+            border: 1px solid rgba(180, 83, 9, 0.2);
+            color: #78350f;
+        }
+
+        .alert i {
+            font-size: 1.1rem;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--muted);
+            margin-bottom: 8px;
+        }
+
+        .input-group {
+            position: relative;
+            display: flex;
+        }
+
+        .input-group-icon {
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--muted);
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .form-control {
+            width: 100%;
+            background: #ffffff;
+            border: 1px solid var(--border);
+            padding: 16px 18px 16px 48px;
+            border-radius: 15px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-control::placeholder {
+            color: var(--muted-light);
+        }
+
+        .form-control:focus {
+            outline: none;
+            background: #ffffff;
+            box-shadow: 0 0 0 4px rgba(0, 74, 153, 0.15);
+            border-color: var(--primary-color);
+        }
+
+        .form-control:disabled {
+            background: #f0f4f8;
+            color: var(--muted);
+            cursor: not-allowed;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--muted);
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3;
+            transition: color 0.2s;
+        }
+
+        .password-toggle:hover {
+            color: var(--primary-color);
+        }
+
+        #password {
+            padding-right: 48px;
+        }
+
+        .btn-login {
+            width: 100%;
+            background: linear-gradient(135deg, var(--primary-color), #0075d9);
+            border: none;
+            border-radius: 15px;
+            padding: 18px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: white;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+            box-shadow: 0 10px 20px rgba(0, 74, 153, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-login:hover:not(:disabled) {
+            background: linear-gradient(135deg, var(--primary-dark), #004a99);
+            transform: translateY(-2px);
+            box-shadow: 0 15px 25px rgba(0, 74, 153, 0.3);
+        }
+
+        .btn-login:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .btn-login:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-login:focus-visible {
+            outline: 2px solid var(--accent-color);
+            outline-offset: 2px;
+        }
+
+        .form-footer {
+            margin-top: 32px;
+            text-align: center;
+            border-top: 1px solid var(--border);
+            padding-top: 20px;
+        }
+
+        .auth-help {
+            color: var(--muted);
+            font-size: 0.9rem;
+            margin: 0;
+        }
+
+        .copyright {
+            color: var(--muted);
+            font-size: 0.85rem;
+            margin-top: 16px;
+        }
+
+        .copyright span {
+            display: block;
+            opacity: 0.7;
+            font-size: 0.78rem;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .login-box {
+                flex-direction: column;
+                width: 100%;
+                max-width: 500px;
+            }
+
+            .login-brand,
+            .login-form-section {
+                width: 100%;
+            }
+
+            .login-brand {
+                padding: 50px 40px;
+            }
+
+            .logo-placeholder {
+                width: 120px;
+                height: 120px;
+                padding: 25px;
+                margin-bottom: 20px;
+            }
+
+            .logo-img {
+                width: 100px;
+            }
+
+            .brand-name {
+                font-size: 2.2rem;
+            }
+
+            .login-form-section {
+                padding: 40px;
+            }
+        }
+
+        @media (max-width: 640px) {
+            body {
+                padding: 16px;
+            }
+
+            .login-box {
+                border-radius: 20px;
+                box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+            }
+
+            .login-brand {
+                display: none;
+            }
+
+            .login-form-section {
+                width: 100%;
+                padding: 32px 24px;
+            }
+
+            .form-header h2 {
+                font-size: 1.5rem;
+            }
+
+            .form-control {
+                padding: 14px 16px 14px 44px;
+                font-size: 16px;
+            }
+
+            .btn-login {
+                padding: 16px;
+                margin-top: 16px;
+            }
+
+            .form-group {
+                margin-bottom: 20px;
+            }
+
+            .alert {
+                padding: 14px 16px;
+            }
+
+            .form-footer {
+                margin-top: 24px;
+                padding-top: 16px;
+            }
+
+            .copyright {
+                font-size: 0.8rem;
+            }
+        }
+
         @media (prefers-reduced-motion: reduce) {
             * {
                 animation-duration: 0.01ms !important;
@@ -612,91 +680,145 @@ $remainingAttempts = max(0, MAX_LOGIN_ATTEMPTS - (int) ($_SESSION['login_attempt
                 transition-duration: 0.01ms !important;
             }
 
-            .auth-submit:hover:not(:disabled) {
+            .btn-login:hover:not(:disabled) {
                 transform: none;
+            }
+        }
+
+        @media (prefers-contrast: more) {
+            .form-control {
+                border-width: 2px;
+            }
+
+            .alert {
+                border-width: 2px;
             }
         }
     </style>
 </head>
-<body class="auth-page">
-    <main class="auth-shell" aria-labelledby="login-title">
-        <!-- Left Section: Intro -->
-        <section class="auth-intro" aria-label="Stalk and Stable overview">
-            <div class="brand-block">
-                <span class="brand-mark" aria-hidden="true">S&amp;S</span>
-                <div>
-                    <p class="eyebrow">Inventory Suite</p>
-                    <h1>Stalk &amp; Stable</h1>
-                </div>
-            </div>
-            <div>
-                <p class="eyebrow">Secure workspace</p>
-                <h2>Manage inventory, sales, and stock alerts from one dashboard.</h2>
-                <p>Sign in with your assigned staff account to access products, POS, customers, suppliers, expenses, and reports.</p>
-            </div>
-        </section>
+<body>
 
-        <!-- Right Section: Login Form -->
-        <section class="login-card">
-            <p class="eyebrow">Welcome back</p>
-            <h2 id="login-title">Sign in to your account</h2>
+<div class="login-container">
+    <div class="login-box">
+        <!-- Brand Side -->
+        <div class="login-brand">
+            <div class="logo-placeholder">
+                <img src="../assets/img/logo.png" alt="Stalk & Stable Logo" class="logo-img" onerror="this.style.display='none'">
+            </div>
+            <h1 class="brand-name">STALK &amp; STABLE</h1>
+            <p class="brand-sub">Distributor Management System</p>
+            <div class="brand-divider"></div>
+            <p class="brand-tagline">
+                Premium Inventory <br> Management Solution
+            </p>
+        </div>
+
+        <!-- Form Side -->
+        <div class="login-form-section">
+            <div class="form-header">
+                <h2>System Login</h2>
+                <p>Enter your credentials to access the portal.</p>
+            </div>
 
             <?php if ($notice !== ''): ?>
-                <div class="form-alert warning" role="status">
-                    <p><?php echo e($notice); ?></p>
+                <div class="alert alert-warning" role="status">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span><?php echo e($notice); ?></span>
                 </div>
             <?php endif; ?>
 
             <?php if ($errors !== []): ?>
-                <div class="form-alert" role="alert">
-                    <?php foreach ($errors as $error): ?>
-                        <p><?php echo e($error); ?></p>
-                    <?php endforeach; ?>
+                <div class="alert alert-danger" role="alert">
+                    <i class="fas fa-circle-exclamation"></i>
+                    <div>
+                        <?php foreach ($errors as $error): ?>
+                            <p style="margin: 0;"><?php echo e($error); ?></p>
+                        <?php endforeach; ?>
+                    </div>
                 </div>
             <?php endif; ?>
 
-            <form method="post" action="login.php" novalidate>
+            <form method="post" action="login.php" novalidate autocomplete="off">
                 <input type="hidden" name="csrf_token" value="<?php echo e(csrf_token()); ?>">
 
                 <div class="form-group">
-                    <label for="login">Email or username</label>
-                    <input
-                        id="login"
-                        name="login"
-                        type="text"
-                        value="<?php echo e($loginValue); ?>"
-                        placeholder="you@example.com or username"
-                        autocomplete="username"
-                        required
-                        autofocus
-                    >
+                    <label for="login" class="form-label">Staff Username or Email</label>
+                    <div class="input-group">
+                        <i class="fas fa-user-shield input-group-icon"></i>
+                        <input
+                            id="login"
+                            name="login"
+                            type="text"
+                            class="form-control"
+                            value="<?php echo e($loginValue); ?>"
+                            placeholder="e.g. b.wambua or staff@stalk.local"
+                            autocomplete="username"
+                            required
+                            autofocus
+                        >
+                    </div>
                 </div>
 
                 <div class="form-group">
-                    <label for="password">Password</label>
-                    <input
-                        id="password"
-                        name="password"
-                        type="password"
-                        placeholder="Enter your password"
-                        autocomplete="current-password"
-                        required
-                    >
+                    <label for="password" class="form-label">Secure Password</label>
+                    <div class="input-group" style="position: relative;">
+                        <i class="fas fa-key input-group-icon"></i>
+                        <input
+                            id="password"
+                            name="password"
+                            type="password"
+                            class="form-control"
+                            placeholder="••••••••"
+                            autocomplete="current-password"
+                            required
+                        >
+                        <button type="button" class="password-toggle" onclick="togglePassword()" aria-label="Toggle password visibility">
+                            <i class="fas fa-eye" id="eye_icon"></i>
+                        </button>
+                    </div>
                 </div>
 
-                <button class="auth-submit" type="submit" <?php echo $db === null || login_is_locked() ? 'disabled' : ''; ?>>
-                    Sign in
+                <button type="submit" class="btn-login" <?php echo $db === null || login_is_locked() ? 'disabled' : ''; ?>>
+                    <i class="fas fa-sign-in-alt"></i> ACCESS SYSTEM
                 </button>
             </form>
 
-            <p class="auth-help">
-                <?php if (login_is_locked()): ?>
-                    🔒 This browser is temporarily locked after repeated failed attempts. Please try again in 15 minutes.
-                <?php else: ?>
-                    <?php echo e((string) $remainingAttempts); ?> sign-in attempts remaining before a temporary lockout.
-                <?php endif; ?>
-            </p>
-        </section>
-    </main>
+            <div class="form-footer">
+                <p class="auth-help">
+                    <?php if (login_is_locked()): ?>
+                        <i class="fas fa-lock"></i> This browser is temporarily locked. Please wait 15 minutes before trying again.
+                    <?php else: ?>
+                        <?php echo e((string) $remainingAttempts); ?> login attempt(s) remaining before temporary lockout.
+                    <?php endif; ?>
+                </p>
+                <p class="copyright">
+                    &copy; 2026 Stalk &amp; Stable
+                    <span>Secure Management Environment</span>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function togglePassword() {
+    const passInput = document.getElementById('password');
+    const eyeIcon = document.getElementById('eye_icon');
+    
+    if (passInput.type === 'password') {
+        passInput.type = 'text';
+        eyeIcon.classList.replace('fa-eye', 'fa-eye-slash');
+    } else {
+        passInput.type = 'password';
+        eyeIcon.classList.replace('fa-eye-slash', 'fa-eye');
+    }
+}
+
+// Prevent form resubmission
+if (window.history.replaceState) {
+    window.history.replaceState(null, null, window.location.href);
+}
+</script>
+
 </body>
 </html>
