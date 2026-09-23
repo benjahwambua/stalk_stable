@@ -1,943 +1,116 @@
 <?php
-session_start();
-if (!isset($_SESSION['user_id'])) {
-    header("Location: ../../auth/login.php");
-    exit();
-}
+declare(strict_types=1);
+require_once __DIR__ . '/../../includes/auth.php';
+require_once __DIR__ . '/../../config/db.php';
 
-require_once("../../config/db.php");
+$pageTitle='Products';
 
-// Fetch products with brand + supplier
-$stmt = $conn->query("
-    SELECT p.*, b.brand_name, s.supplier_name 
-    FROM products p
-    LEFT JOIN brands b ON p.brand_id = b.id
-    LEFT JOIN suppliers s ON p.supplier_id = s.id
-    ORDER BY p.id DESC
-");
+$search=trim((string)($_GET['q']??''));
+$category=(int)($_GET['category']??0);
+$status=(string)($_GET['status']??'Active');
 
-$products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$categories=$conn->query("SELECT id, category_name FROM categories WHERE status='Active' ORDER BY category_name")->fetchAll();
 
-// Default alcohol list for Kenya with icons
-$default_alcohols = [
-    ['name' => 'Beer', 'icon' => '🍺', 'category' => 'Beer & Malt'],
-    ['name' => 'Whiskey', 'icon' => '🥃', 'category' => 'Spirits'],
-    ['name' => 'Vodka', 'icon' => '🥃', 'category' => 'Spirits'],
-    ['name' => 'Gin', 'icon' => '🥃', 'category' => 'Spirits'],
-    ['name' => 'Rum', 'icon' => '🥃', 'category' => 'Spirits'],
-    ['name' => 'Wine', 'icon' => '🍷', 'category' => 'Wine'],
-    ['name' => 'Champagne', 'icon' => '🍾', 'category' => 'Champagne & Sparkling'],
-    ['name' => 'Brandy', 'icon' => '🥃', 'category' => 'Spirits'],
-    ['name' => 'Liqueur', 'icon' => '🥃', 'category' => 'Liqueurs'],
-    ['name' => 'Tequila', 'icon' => '🥃', 'category' => 'Spirits'],
-    ['name' => 'Brandy', 'icon' => '🥃', 'category' => 'Spirits'],
-    ['name' => 'Cider', 'icon' => '🍎', 'category' => 'Cider'],
-];
+$sql="SELECT p.*, b.brand_name, s.supplier_name, c.category_name
+      FROM products p
+      LEFT JOIN brands b ON b.id=p.brand_id
+      LEFT JOIN suppliers s ON s.id=p.supplier_id
+      LEFT JOIN categories c ON c.id=p.category_id
+      WHERE 1=1";
+$params=[];
+if($search!==''){ $sql.=" AND (p.product_name LIKE :q OR p.sku LIKE :q OR p.barcode LIKE :q OR b.brand_name LIKE :q)"; $params[':q']="%{$search}%"; }
+if($category>0){ $sql.=" AND p.category_id=:category"; $params[':category']=$category; }
+if(in_array($status,['Active','Inactive'],true)){ $sql.=" AND p.status=:status"; $params[':status']=$status; }
+$sql.=" ORDER BY p.id DESC";
+$stmt=$conn->prepare($sql); $stmt->execute($params); $products=$stmt->fetchAll();
+
+$totalProducts=(int)$conn->query("SELECT COUNT(*) FROM products WHERE status='Active'")->fetchColumn();
+$totalStock=(int)$conn->query("SELECT COALESCE(SUM(stock_quantity),0) FROM products WHERE status='Active'")->fetchColumn();
+$stockValue=(float)$conn->query("SELECT COALESCE(SUM(stock_quantity*buying_price),0) FROM products WHERE status='Active'")->fetchColumn();
+$lowStock=(int)$conn->query("SELECT COUNT(*) FROM products WHERE status='Active' AND stock_quantity<=reorder_level")->fetchColumn();
+
+$brands=$conn->query("SELECT id,brand_name FROM brands WHERE status='Active' ORDER BY brand_name")->fetchAll();
+$suppliers=$conn->query("SELECT id,supplier_name FROM suppliers WHERE status='Active' ORDER BY supplier_name")->fetchAll();
+
+$flash=$_SESSION['product_flash']??null; unset($_SESSION['product_flash']);
+
+require_once __DIR__ . '/../../includes/header.php';
+require_once __DIR__ . '/../../includes/sidebar.php';
 ?>
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Products Inventory - Stalk & Stable</title>
-    <link rel="stylesheet" href="../../assets/css/style.css">
-    <style>
-        .products-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: var(--space-xl);
-            gap: var(--space-lg);
-            flex-wrap: wrap;
-        }
-
-        .products-header h1 {
-            margin: 0;
-        }
-
-        .header-actions {
-            display: flex;
-            gap: var(--space-md);
-            flex-wrap: wrap;
-        }
-
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: var(--space-sm);
-            padding: var(--space-sm) var(--space-lg);
-            border: none;
-            border-radius: var(--radius-lg);
-            font-weight: var(--font-weight-semibold);
-            cursor: pointer;
-            transition: all var(--transition-base);
-            text-decoration: none;
-            font-size: 0.95rem;
-        }
-
-        .btn-primary {
-            background: var(--brand);
-            color: #fff;
-            box-shadow: var(--shadow-sm);
-        }
-
-        .btn-primary:hover {
-            background: var(--brand-dark);
-            box-shadow: var(--shadow-md);
-            transform: translateY(-2px);
-        }
-
-        .btn-secondary {
-            background: var(--brand-soft);
-            color: var(--brand-dark);
-            border: 1px solid var(--border);
-        }
-
-        .btn-secondary:hover {
-            background: #dce3d4;
-            box-shadow: var(--shadow-sm);
-        }
-
-        .btn-sm {
-            padding: var(--space-xs) var(--space-md);
-            font-size: 0.85rem;
-        }
-
-        .btn-edit {
-            background: #3b82f6;
-            color: #fff;
-        }
-
-        .btn-edit:hover {
-            background: #2563eb;
-        }
-
-        .btn-delete {
-            background: #ef4444;
-            color: #fff;
-        }
-
-        .btn-delete:hover {
-            background: #dc2626;
-        }
-
-        .search-bar {
-            flex: 1;
-            min-width: 250px;
-            display: flex;
-            gap: var(--space-sm);
-        }
-
-        .search-bar input {
-            flex: 1;
-            padding: var(--space-sm) var(--space-md);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
-            font-size: 0.95rem;
-            font-family: var(--font-family);
-            transition: border-color var(--transition-base);
-        }
-
-        .search-bar input:focus {
-            outline: none;
-            border-color: var(--brand);
-            box-shadow: 0 0 0 3px rgba(49, 92, 43, 0.1);
-        }
-
-        .view-toggle {
-            display: flex;
-            gap: var(--space-sm);
-            background: var(--border-light);
-            padding: var(--space-xs);
-            border-radius: var(--radius-lg);
-        }
-
-        .view-toggle button {
-            padding: var(--space-xs) var(--space-md);
-            border: none;
-            background: transparent;
-            cursor: pointer;
-            border-radius: var(--radius-md);
-            font-weight: var(--font-weight-semibold);
-            transition: all var(--transition-base);
-            font-size: 0.9rem;
-        }
-
-        .view-toggle button.active {
-            background: var(--panel);
-            box-shadow: var(--shadow-sm);
-            color: var(--brand);
-        }
-
-        /* Table View */
-        .products-table {
-            width: 100%;
-            border-collapse: collapse;
-            background: var(--panel);
-            border-radius: var(--radius-xl);
-            overflow: hidden;
-            box-shadow: var(--shadow-sm);
-        }
-
-        .products-table thead {
-            background: var(--brand-soft);
-            border-bottom: 2px solid var(--border);
-        }
-
-        .products-table th {
-            padding: var(--space-md) var(--space-lg);
-            text-align: left;
-            font-weight: var(--font-weight-bold);
-            color: var(--brand-dark);
-            text-transform: uppercase;
-            font-size: 0.85rem;
-            letter-spacing: 0.5px;
-        }
-
-        .products-table td {
-            padding: var(--space-md) var(--space-lg);
-            border-bottom: 1px solid var(--border);
-            color: var(--ink);
-        }
-
-        .products-table tbody tr {
-            transition: all var(--transition-base);
-        }
-
-        .products-table tbody tr:hover {
-            background: var(--bg-light);
-            box-shadow: inset 0 0 0 2px var(--brand-soft);
-        }
-
-        .product-icon {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 40px;
-            height: 40px;
-            background: var(--brand-soft);
-            border-radius: var(--radius-md);
-            font-size: 1.5rem;
-            margin-right: var(--space-sm);
-        }
-
-        .product-name-cell {
-            display: flex;
-            align-items: center;
-            gap: var(--space-md);
-        }
-
-        .product-info {
-            display: flex;
-            flex-direction: column;
-            gap: var(--space-xs);
-        }
-
-        .product-info strong {
-            color: var(--ink);
-            font-size: 0.95rem;
-        }
-
-        .product-info small {
-            color: var(--muted);
-            font-size: 0.8rem;
-        }
-
-        .price-cell {
-            font-weight: var(--font-weight-semibold);
-            color: var(--brand);
-        }
-
-        .stock-cell {
-            font-weight: var(--font-weight-bold);
-            text-align: center;
-            padding: var(--space-md) var(--space-lg);
-        }
-
-        .stock-low {
-            color: var(--danger);
-            background: rgba(220, 38, 38, 0.1);
-            padding: var(--space-xs) var(--space-md);
-            border-radius: var(--radius-md);
-        }
-
-        .stock-ok {
-            color: var(--success);
-            background: rgba(16, 185, 129, 0.1);
-            padding: var(--space-xs) var(--space-md);
-            border-radius: var(--radius-md);
-        }
-
-        .action-buttons {
-            display: flex;
-            gap: var(--space-sm);
-            align-items: center;
-            flex-wrap: wrap;
-        }
-
-        /* Grid View */
-        .products-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: var(--space-lg);
-        }
-
-        .product-card {
-            display: flex;
-            flex-direction: column;
-            padding: var(--space-lg);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-xl);
-            background: var(--panel);
-            box-shadow: var(--shadow-sm);
-            transition: all var(--transition-base);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .product-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, var(--brand), var(--brand-light));
-            transform: scaleX(0);
-            transform-origin: left;
-            transition: transform var(--transition-base);
-        }
-
-        .product-card:hover {
-            border-color: var(--brand-soft);
-            box-shadow: var(--shadow-md);
-            transform: translateY(-4px);
-        }
-
-        .product-card:hover::before {
-            transform: scaleX(1);
-        }
-
-        .card-icon-large {
-            font-size: 3rem;
-            text-align: center;
-            margin-bottom: var(--space-md);
-        }
-
-        .card-title {
-            font-weight: var(--font-weight-bold);
-            font-size: 1.1rem;
-            color: var(--ink);
-            margin-bottom: var(--space-sm);
-        }
-
-        .card-badge {
-            display: inline-block;
-            background: var(--brand-soft);
-            color: var(--brand-dark);
-            padding: var(--space-xs) var(--space-md);
-            border-radius: var(--radius-md);
-            font-size: 0.8rem;
-            font-weight: var(--font-weight-semibold);
-            margin-bottom: var(--space-md);
-        }
-
-        .card-details {
-            display: grid;
-            gap: var(--space-sm);
-            margin-bottom: var(--space-lg);
-            flex: 1;
-        }
-
-        .detail-row {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.9rem;
-        }
-
-        .detail-row strong {
-            color: var(--muted);
-        }
-
-        .card-actions {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: var(--space-sm);
-        }
-
-        .card-actions .btn {
-            justify-content: center;
-            margin: 0;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: var(--space-2xl);
-            background: var(--bg-light);
-            border: 2px dashed var(--border);
-            border-radius: var(--radius-xl);
-            margin: var(--space-xl) 0;
-        }
-
-        .empty-state-icon {
-            font-size: 3rem;
-            margin-bottom: var(--space-md);
-        }
-
-        .empty-state h3 {
-            color: var(--muted);
-            margin-bottom: var(--space-md);
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 300;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal.active {
-            display: flex;
-        }
-
-        .modal-content {
-            background: var(--panel);
-            border-radius: var(--radius-xl);
-            padding: var(--space-2xl);
-            max-width: 500px;
-            width: 90%;
-            box-shadow: var(--shadow-lg);
-            animation: slideUp var(--transition-base);
-        }
-
-        @keyframes slideUp {
-            from {
-                transform: translateY(20px);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: var(--space-lg);
-        }
-
-        .modal-header h2 {
-            margin: 0;
-        }
-
-        .close-btn {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            color: var(--muted);
-            padding: 0;
-        }
-
-        .close-btn:hover {
-            color: var(--ink);
-        }
-
-        .form-group {
-            margin-bottom: var(--space-lg);
-        }
-
-        .form-group label {
-            display: block;
-            font-weight: var(--font-weight-semibold);
-            margin-bottom: var(--space-sm);
-            color: var(--ink);
-        }
-
-        .form-group input,
-        .form-group select {
-            width: 100%;
-            padding: var(--space-sm) var(--space-md);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
-            font-size: 0.95rem;
-            font-family: var(--font-family);
-            transition: border-color var(--transition-base);
-        }
-
-        .form-group input:focus,
-        .form-group select:focus {
-            outline: none;
-            border-color: var(--brand);
-            box-shadow: 0 0 0 3px rgba(49, 92, 43, 0.1);
-        }
-
-        .icon-picker {
-            display: grid;
-            grid-template-columns: repeat(6, 1fr);
-            gap: var(--space-md);
-            margin-bottom: var(--space-lg);
-        }
-
-        .icon-option {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: var(--space-md);
-            border: 2px solid var(--border);
-            border-radius: var(--radius-lg);
-            cursor: pointer;
-            font-size: 2rem;
-            transition: all var(--transition-base);
-        }
-
-        .icon-option:hover {
-            border-color: var(--brand);
-            background: var(--brand-soft);
-        }
-
-        .icon-option.selected {
-            border-color: var(--brand);
-            background: var(--brand);
-        }
-
-        .stats-row {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: var(--space-lg);
-            margin-bottom: var(--space-xl);
-        }
-
-        .stat-box {
-            padding: var(--space-lg);
-            background: var(--brand-soft);
-            border-radius: var(--radius-lg);
-            text-align: center;
-            border: 1px solid var(--border);
-        }
-
-        .stat-box strong {
-            display: block;
-            font-size: 1.8rem;
-            color: var(--brand-dark);
-            margin-bottom: var(--space-sm);
-        }
-
-        .stat-box small {
-            color: var(--muted);
-            font-size: 0.85rem;
-        }
-
-        @media (max-width: 768px) {
-            .products-header {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .search-bar {
-                width: 100%;
-            }
-
-            .header-actions {
-                width: 100%;
-                justify-content: flex-start;
-            }
-
-            .products-grid {
-                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            }
-
-            .action-buttons {
-                flex-direction: column;
-            }
-
-            .products-table {
-                font-size: 0.85rem;
-            }
-
-            .products-table th,
-            .products-table td {
-                padding: var(--space-sm);
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="app-shell">
-        <!-- SIDEBAR -->
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <div class="brand-block">
-                    <div class="brand-mark">SS</div>
-                    <div>
-                        <h1>Stalk & Stable</h1>
-                        <p class="brand-subtitle">Alcohol Distribution</p>
-                    </div>
-                </div>
-            </div>
-
-            <nav class="sidebar-nav">
-                <ul>
-                    <li><a href="../../index.php" class="nav-link">
-                        <span class="nav-icon">📊</span>
-                        <span>Dashboard</span>
-                    </a></li>
-                    <li><a href="index.php" class="nav-link active">
-                        <span class="nav-icon">📦</span>
-                        <span>Products</span>
-                    </a></li>
-                    <li><a href="../categories/" class="nav-link">
-                        <span class="nav-icon">🏷️</span>
-                        <span>Categories</span>
-                    </a></li>
-                    <li><a href="../brands/" class="nav-link">
-                        <span class="nav-icon">⭐</span>
-                        <span>Brands</span>
-                    </a></li>
-                    <li><a href="../customers/" class="nav-link">
-                        <span class="nav-icon">👥</span>
-                        <span>Customers</span>
-                    </a></li>
-                    <li><a href="../suppliers/" class="nav-link">
-                        <span class="nav-icon">🚚</span>
-                        <span>Suppliers</span>
-                    </a></li>
-                    <li><a href="../sales/" class="nav-link">
-                        <span class="nav-icon">💳</span>
-                        <span>Sales (POS)</span>
-                    </a></li>
-                    <li><a href="../expenses/" class="nav-link">
-                        <span class="nav-icon">💰</span>
-                        <span>Expenses</span>
-                    </a></li>
-                    <li><a href="../reports/" class="nav-link">
-                        <span class="nav-icon">📈</span>
-                        <span>Reports</span>
-                    </a></li>
-                </ul>
-            </nav>
-
-            <div class="sidebar-footer">
-                <a href="../../auth/logout.php" class="nav-link logout-link">
-                    <span class="nav-icon">🚪</span>
-                    <span>Logout</span>
-                </a>
-            </div>
-        </aside>
-
-        <!-- MAIN WRAPPER -->
-        <div class="main-wrapper">
-            <!-- TOPBAR -->
-            <header class="topbar">
-                <div class="topbar-left">
-                    <h2>Products</h2>
-                </div>
-                <div class="topbar-right">
-                    <div class="user-section">
-                        <div class="user-info">
-                            <p class="user-name"><?php echo htmlspecialchars($_SESSION['full_name']); ?></p>
-                            <p class="user-role"><?php echo htmlspecialchars($_SESSION['role']); ?></p>
-                        </div>
-                        <div class="user-avatar">
-                            <?php echo strtoupper(substr($_SESSION['full_name'], 0, 1)); ?>
-                        </div>
-                    </div>
-                </div>
-            </header>
-
-            <!-- MAIN CONTENT -->
-            <main class="main-content">
-                <!-- Stats Row -->
-                <div class="stats-row">
-                    <div class="stat-box">
-                        <strong><?php echo count($products); ?></strong>
-                        <small>Total Products</small>
-                    </div>
-                    <div class="stat-box">
-                        <strong><?php echo array_sum(array_column($products, 'stock_quantity')); ?></strong>
-                        <small>Total Stock</small>
-                    </div>
-                    <div class="stat-box">
-                        <strong><?php echo number_format(array_sum(array_column($products, 'selling_price')), 2); ?></strong>
-                        <small>Total Value</small>
-                    </div>
-                </div>
-
-                <!-- Header Section -->
-                <div class="products-header">
-                    <div>
-                        <h1>Products Inventory</h1>
-                        <p class="text-muted">Manage your alcohol distribution inventory</p>
-                    </div>
-                    <div class="header-actions">
-                        <div class="search-bar">
-                            <input type="text" id="searchInput" placeholder="Search products...">
-                        </div>
-                        <button class="btn btn-primary" onclick="openAddProductModal()">
-                            <span>➕</span>
-                            <span>Add Product</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- View Toggle -->
-                <div style="display: flex; gap: var(--space-lg); margin-bottom: var(--space-lg);">
-                    <div class="view-toggle">
-                        <button class="active" onclick="switchView('table')">📊 Table</button>
-                        <button onclick="switchView('grid')">🎴 Grid</button>
-                    </div>
-                </div>
-
-                <!-- Table View -->
-                <div id="tableView" class="view-container">
-                    <?php if (count($products) > 0): ?>
-                    <table class="products-table">
-                        <thead>
-                            <tr>
-                                <th>Product</th>
-                                <th>Brand</th>
-                                <th>Supplier</th>
-                                <th>Buying Price</th>
-                                <th>Selling Price</th>
-                                <th>Stock</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="productTableBody">
-                            <?php foreach ($products as $p): ?>
-                            <tr class="product-row" data-name="<?php echo strtolower($p['product_name']); ?>">
-                                <td>
-                                    <div class="product-name-cell">
-                                        <div class="product-icon"><?php echo isset($p['icon']) ? $p['icon'] : '🍾'; ?></div>
-                                        <div class="product-info">
-                                            <strong><?php echo htmlspecialchars($p['product_name']); ?></strong>
-                                            <small>ID: <?php echo $p['id']; ?></small>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td><?php echo htmlspecialchars($p['brand_name'] ?? 'N/A'); ?></td>
-                                <td><?php echo htmlspecialchars($p['supplier_name'] ?? 'N/A'); ?></td>
-                                <td class="price-cell">KES <?php echo number_format($p['buying_price'], 2); ?></td>
-                                <td class="price-cell">KES <?php echo number_format($p['selling_price'], 2); ?></td>
-                                <td class="stock-cell">
-                                    <?php if ($p['stock_quantity'] < 10): ?>
-                                        <span class="stock-low">⚠️ <?php echo $p['stock_quantity']; ?></span>
-                                    <?php else: ?>
-                                        <span class="stock-ok">✓ <?php echo $p['stock_quantity']; ?></span>
-                                    <?php endif; ?>
-                                </td>
-                                <td>
-                                    <div class="action-buttons">
-                                        <a href="edit.php?id=<?php echo $p['id']; ?>" class="btn btn-edit btn-sm">✏️ Edit</a>
-                                        <a href="delete.php?id=<?php echo $p['id']; ?>" class="btn btn-delete btn-sm" onclick="return confirm('Are you sure?')">🗑️ Delete</a>
-                                    </div>
-                                </td>
-                            </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                    <?php else: ?>
-                    <div class="empty-state">
-                        <div class="empty-state-icon">📦</div>
-                        <h3>No Products Found</h3>
-                        <p class="text-muted">Start by adding your first product to your inventory.</p>
-                        <button class="btn btn-primary" onclick="openAddProductModal()" style="margin-top: var(--space-lg);">
-                            <span>➕</span>
-                            <span>Add First Product</span>
-                        </button>
-                    </div>
-                    <?php endif; ?>
-                </div>
-
-                <!-- Grid View -->
-                <div id="gridView" class="view-container" style="display: none;">
-                    <?php if (count($products) > 0): ?>
-                    <div class="products-grid" id="productGrid">
-                        <?php foreach ($products as $p): ?>
-                        <div class="product-card product-row" data-name="<?php echo strtolower($p['product_name']); ?>">
-                            <div class="card-icon-large"><?php echo isset($p['icon']) ? $p['icon'] : '🍾'; ?></div>
-                            <div class="card-title"><?php echo htmlspecialchars($p['product_name']); ?></div>
-                            <span class="card-badge"><?php echo htmlspecialchars($p['brand_name'] ?? 'No Brand'); ?></span>
-                            
-                            <div class="card-details">
-                                <div class="detail-row">
-                                    <strong>Supplier:</strong>
-                                    <span><?php echo htmlspecialchars($p['supplier_name'] ?? 'N/A'); ?></span>
-                                </div>
-                                <div class="detail-row">
-                                    <strong>Buy Price:</strong>
-                                    <span>KES <?php echo number_format($p['buying_price'], 2); ?></span>
-                                </div>
-                                <div class="detail-row">
-                                    <strong>Sell Price:</strong>
-                                    <span class="price-cell">KES <?php echo number_format($p['selling_price'], 2); ?></span>
-                                </div>
-                                <div class="detail-row">
-                                    <strong>Stock:</strong>
-                                    <span <?php echo $p['stock_quantity'] < 10 ? 'class="stock-low"' : 'class="stock-ok"'; ?>>
-                                        <?php echo $p['stock_quantity']; ?> units
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div class="card-actions">
-                                <a href="edit.php?id=<?php echo $p['id']; ?>" class="btn btn-edit btn-sm">✏️ Edit</a>
-                                <a href="delete.php?id=<?php echo $p['id']; ?>" class="btn btn-delete btn-sm" onclick="return confirm('Are you sure?')">🗑️ Delete</a>
-                            </div>
-                        </div>
-                        <?php endforeach; ?>
-                    </div>
-                    <?php endif; ?>
-                </div>
-            </main>
-
-            <!-- FOOTER -->
-            <footer class="footer">
-                <div class="footer-content">
-                    <p>&copy; 2026 Stalk & Stable. All rights reserved.</p>
-                    <div class="footer-links">
-                        <a href="#">Privacy Policy</a>
-                        <a href="#">Terms of Service</a>
-                        <a href="#">Support</a>
-                    </div>
-                </div>
-            </footer>
-        </div>
-    </div>
-
-    <!-- Modal for Adding/Editing Products -->
-    <div id="productModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="modalTitle">Add New Product</h2>
-                <button class="close-btn" onclick="closeModal()">&times;</button>
-            </div>
-
-            <form onsubmit="handleProductSubmit(event)">
-                <div class="form-group">
-                    <label for="productName">Product Name</label>
-                    <input type="text" id="productName" required placeholder="Enter product name">
-                </div>
-
-                <div class="form-group">
-                    <label>Select Icon</label>
-                    <div class="icon-picker" id="iconPicker">
-                        <?php foreach ($default_alcohols as $alcohol): ?>
-                        <div class="icon-option" onclick="selectIcon(this, '<?php echo $alcohol['icon']; ?>')">
-                            <?php echo $alcohol['icon']; ?>
-                        </div>
-                        <?php endforeach; ?>
-                    </div>
-                    <input type="hidden" id="selectedIcon" value="🍾">
-                </div>
-
-                <div class="form-group">
-                    <label for="brandId">Brand</label>
-                    <select id="brandId" required>
-                        <option value="">Select a brand...</option>
-                        <!-- Populate from database -->
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="supplierId">Supplier</label>
-                    <select id="supplierId" required>
-                        <option value="">Select a supplier...</option>
-                        <!-- Populate from database -->
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="buyingPrice">Buying Price (KES)</label>
-                    <input type="number" id="buyingPrice" step="0.01" required placeholder="0.00">
-                </div>
-
-                <div class="form-group">
-                    <label for="sellingPrice">Selling Price (KES)</label>
-                    <input type="number" id="sellingPrice" step="0.01" required placeholder="0.00">
-                </div>
-
-                <div class="form-group">
-                    <label for="stockQuantity">Stock Quantity</label>
-                    <input type="number" id="stockQuantity" min="0" required placeholder="0">
-                </div>
-
-                <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md); margin-top: var(--space-xl);">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal()" style="width: 100%;">Cancel</button>
-                    <button type="submit" class="btn btn-primary" style="width: 100%;">Save Product</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <script>
-        // Search functionality
-        document.getElementById('searchInput').addEventListener('keyup', function(e) {
-            const searchTerm = e.target.value.toLowerCase();
-            const rows = document.querySelectorAll('.product-row');
-            
-            rows.forEach(row => {
-                const name = row.getAttribute('data-name');
-                if (name.includes(searchTerm)) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-        });
-
-        // View switching
-        function switchView(view) {
-            document.querySelectorAll('.view-toggle button').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
-
-            if (view === 'table') {
-                document.getElementById('tableView').style.display = '';
-                document.getElementById('gridView').style.display = 'none';
-            } else {
-                document.getElementById('tableView').style.display = 'none';
-                document.getElementById('gridView').style.display = '';
-            }
-        }
-
-        // Modal functions
-        function openAddProductModal() {
-            document.getElementById('productModal').classList.add('active');
-            document.getElementById('modalTitle').textContent = 'Add New Product';
-        }
-
-        function closeModal() {
-            document.getElementById('productModal').classList.remove('active');
-        }
-
-        function selectIcon(element, icon) {
-            document.querySelectorAll('.icon-option').forEach(el => el.classList.remove('selected'));
-            element.classList.add('selected');
-            document.getElementById('selectedIcon').value = icon;
-        }
-
-        function handleProductSubmit(event) {
-            event.preventDefault();
-            alert('Form submission would be handled by create.php');
-            // Actual form submission logic here
-        }
-
-        // Close modal when clicking outside
-        window.onclick = function(event) {
-            const modal = document.getElementById('productModal');
-            if (event.target === modal) {
-                closeModal();
-            }
-        }
-    </script>
-</body>
-</html>
+<main class="content">
+<style>
+.page-head{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:22px;flex-wrap:wrap}
+.page-head h1{margin:0}.muted{color:#64748b}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:10px 15px;border-radius:8px;text-decoration:none;border:0;cursor:pointer;font-weight:700;font-size:13px}.btn-primary{background:#004a99;color:#fff}.btn-primary:hover{background:#003b7a}.btn-light{background:#eef2f7;color:#334155}.btn-danger{background:#fee2e2;color:#b91c1c}.btn-edit{background:#dbeafe;color:#1d4ed8}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:15px;margin-bottom:20px}.stat{background:#fff;border-radius:12px;padding:18px;box-shadow:0 1px 4px #00000012}.stat strong{display:block;font-size:25px}.stat span{color:#64748b;font-size:13px}
+.toolbar{background:#fff;padding:15px;border-radius:12px;margin-bottom:15px;display:flex;gap:10px;flex-wrap:wrap}.toolbar input,.toolbar select{padding:10px 12px;border:1px solid #dbe3ec;border-radius:8px;min-width:180px}.toolbar input{flex:1}
+.table-card{background:#fff;border-radius:12px;overflow:auto;box-shadow:0 1px 4px #00000012}.products-table{width:100%;border-collapse:collapse;min-width:950px}.products-table th{background:#004a99;color:#fff;text-align:left;padding:13px;font-size:12px}.products-table td{padding:13px;border-bottom:1px solid #e5e7eb;font-size:13px}.product-name{display:flex;gap:10px;align-items:center}.icon{font-size:25px}.badge{padding:5px 9px;background:#eef2ff;border-radius:20px;font-size:11px}.stock-low{color:#b45309;background:#fef3c7;padding:5px 8px;border-radius:6px}.stock-out{color:#b91c1c;background:#fee2e2;padding:5px 8px;border-radius:6px}.stock-ok{color:#047857;background:#d1fae5;padding:5px 8px;border-radius:6px}.actions{display:flex;gap:6px}.flash{padding:12px 15px;border-radius:9px;margin-bottom:18px;background:#ecfdf5;color:#166534;border:1px solid #bbf7d0}
+@media(max-width:900px){.stats-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:600px){.stats-grid{grid-template-columns:1fr}.content{padding:18px}}
+</style>
+
+<div class="page-head">
+ <div><h1>Products Inventory</h1><p class="muted">Manage products, pricing, stock and suppliers.</p></div>
+ <button class="btn btn-primary" onclick="document.getElementById('productModal').classList.add('show')"><i class="fas fa-plus"></i> Add Product</button>
+</div>
+
+<?php if($flash): ?><div class="flash"><?=e($flash)?></div><?php endif; ?>
+
+<div class="stats-grid">
+ <div class="stat"><strong><?=number_format($totalProducts)?></strong><span>Active Products</span></div>
+ <div class="stat"><strong><?=number_format($totalStock)?></strong><span>Total Stock Units</span></div>
+ <div class="stat"><strong>KES <?=number_format($stockValue,2)?></strong><span>Stock Cost Value</span></div>
+ <div class="stat"><strong><?=number_format($lowStock)?></strong><span>Low Stock Items</span></div>
+</div>
+
+<form class="toolbar" method="get">
+ <input name="q" value="<?=e($search)?>" placeholder="Search product, SKU, barcode or brand...">
+ <select name="category"><option value="0">All Categories</option><?php foreach($categories as $c): ?><option value="<?=$c['id']?>" <?=$category===(int)$c['id']?'selected':''?>><?=e($c['category_name'])?></option><?php endforeach;?></select>
+ <select name="status"><option value="Active" <?=$status==='Active'?'selected':''?>>Active</option><option value="Inactive" <?=$status==='Inactive'?'selected':''?>>Inactive</option><option value="all" <?=$status==='all'?'selected':''?>>All Status</option></select>
+ <button class="btn btn-light" type="submit"><i class="fas fa-search"></i> Filter</button>
+ <a class="btn btn-light" href="<?=BASE_URL?>/modules/products/index.php">Reset</a>
+</form>
+
+<div class="table-card">
+<table class="products-table">
+<thead><tr><th>Product</th><th>Category</th><th>Brand</th><th>Supplier</th><th>Buy Price</th><th>Sell Price</th><th>Stock</th><th>Status</th><th>Actions</th></tr></thead>
+<tbody>
+<?php if(!$products): ?><tr><td colspan="9" style="text-align:center;padding:45px;color:#64748b">No products found.</td></tr>
+<?php else: foreach($products as $p): $stock=(int)$p['stock_quantity']; ?>
+<tr>
+<td><div class="product-name"><span class="icon"><?=e($p['icon']?:'🍾')?></span><div><strong><?=e($p['product_name'])?></strong><br><small class="muted"><?=e($p['sku']?:'No SKU')?></small></div></div></td>
+<td><?=e($p['category_name']?:$p['category']?:'Uncategorized')?></td>
+<td><?=e($p['brand_name']?:'—')?></td><td><?=e($p['supplier_name']?:'—')?></td>
+<td>KES <?=number_format((float)$p['buying_price'],2)?></td><td>KES <?=number_format((float)$p['selling_price'],2)?></td>
+<td><?php if($stock===0): ?><span class="stock-out">Out of stock</span><?php elseif($stock<=(int)$p['reorder_level']): ?><span class="stock-low">⚠ <?=$stock?></span><?php else:?><span class="stock-ok">✓ <?=$stock?></span><?php endif;?></td>
+<td><?=e($p['status'])?></td>
+<td><div class="actions"><a class="btn btn-edit" href="edit.php?id=<?=$p['id']?>"><i class="fas fa-edit"></i></a><a class="btn btn-danger" href="delete.php?id=<?=$p['id']?>" onclick="return confirm('Delete this product?')"><i class="fas fa-trash"></i></a></div></td>
+</tr>
+<?php endforeach; endif;?>
+</tbody></table></div>
+</main>
+
+<div id="productModal" class="modal">
+<div class="modal-box">
+<h2>Add Product</h2><button class="modal-close" onclick="document.getElementById('productModal').classList.remove('show')">&times;</button>
+<form method="post" action="store.php">
+<div class="form-grid">
+<label>Product Name *<input name="product_name" required maxlength="160"></label>
+<label>SKU<input name="sku" maxlength="80"></label>
+<label>Barcode<input name="barcode" maxlength="80"></label>
+<label>Category<select name="category_id"><option value="">Select category</option><?php foreach($categories as $c):?><option value="<?=$c['id']?>"><?=e($c['category_name'])?></option><?php endforeach;?></select></label>
+<label>Brand<select name="brand_id"><option value="">Select brand</option><?php foreach($brands as $b):?><option value="<?=$b['id']?>"><?=e($b['brand_name'])?></option><?php endforeach;?></select></label>
+<label>Supplier<select name="supplier_id"><option value="">Select supplier</option><?php foreach($suppliers as $s):?><option value="<?=$s['id']?>"><?=e($s['supplier_name'])?></option><?php endforeach;?></select></label>
+<label>Buying Price *<input type="number" name="buying_price" min="0" step=".01" required></label>
+<label>Selling Price *<input type="number" name="selling_price" min="0" step=".01" required></label>
+<label>Wholesale Price<input type="number" name="wholesale_price" min="0" step=".01"></label>
+<label>Opening Stock<input type="number" name="stock_quantity" min="0" value="0"></label>
+<label>Reorder Level<input type="number" name="reorder_level" min="0" value="10"></label>
+<label>Unit<input name="unit" value="Piece" maxlength="30"></label>
+<label>Icon<input name="icon" value="🍾" maxlength="10"></label>
+</div>
+<div class="modal-actions"><button type="button" class="btn btn-light" onclick="document.getElementById('productModal').classList.remove('show')">Cancel</button><button class="btn btn-primary">Save Product</button></div>
+</form></div></div>
+<style>
+.modal{display:none;position:fixed;inset:0;background:#0008;z-index:2000;align-items:center;justify-content:center;padding:20px}.modal.show{display:flex}.modal-box{background:#fff;border-radius:15px;padding:25px;width:min(760px,100%);max-height:90vh;overflow:auto;position:relative}.modal-box h2{margin-top:0}.modal-close{position:absolute;right:18px;top:12px;border:0;background:none;font-size:28px;cursor:pointer}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}.form-grid label{font-size:12px;font-weight:700;color:#475569}.form-grid input,.form-grid select{display:block;width:100%;box-sizing:border-box;margin-top:6px;padding:11px;border:1px solid #dbe3ec;border-radius:8px}.modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}@media(max-width:650px){.form-grid{grid-template-columns:1fr}}
+</style>
+<?php require_once __DIR__ . '/../../includes/footer.php'; ?>
