@@ -58,6 +58,9 @@ $role = $_SESSION['role'] ?? 'Staff';
         <?php endif; ?>
         <?php if (canAccessModule('purchases')): ?>
         <a href="<?= BASE_URL ?>/modules/purchases/index.php" class="<?= navActive('/purchases/') ?>"><i class="fas fa-cart-plus icon-main"></i>Purchases</a>
+        <?php if (canAccessModule('supply_chain')): ?>
+        <a href="<?= BASE_URL ?>/modules/supply_chain/index.php" class="<?= navActive('/supply_chain/') ?>"><i class="fas fa-project-diagram icon-main"></i>Supply Chain</a>
+        <?php endif; ?>
         <?php endif; ?>
         <?php if (canAccessModule('sales')): ?>
         <a href="<?= BASE_URL ?>/modules/sales/index.php" class="<?= navActive('/sales/') ?>"><i class="fas fa-cash-register icon-main"></i>Sales / POS</a>
@@ -90,6 +93,11 @@ $role = $_SESSION['role'] ?? 'Staff';
         <div class="menu-title">Administration</div>
         <a href="<?= BASE_URL ?>/modules/users/index.php" class="<?= navActive('/users/') ?>"><i class="fas fa-users-cog icon-main"></i>Users</a>
         <a href="<?= BASE_URL ?>/modules/settings/index.php" class="<?= navActive('/settings/') ?>"><i class="fas fa-cogs icon-main"></i>Settings</a>
+        <?php endif; ?>
+        <?php if (canAccessModule('mpesa')): ?>
+        <a href="<?= BASE_URL ?>/modules/mpesa/index.php" class="<?= navActive('/mpesa/') ?>"><i class="fas fa-mobile-alt icon-main"></i>M-PESA</a>
+        <?php endif; ?>
+        <?php if (isSuperUser()): ?>
         <?php endif; ?>
 
         <a href="<?= BASE_URL ?>/auth/logout.php" class="logout-link"><i class="fas fa-power-off icon-main"></i>Logout</a>
