@@ -1,0 +1,5 @@
+<?php
+declare(strict_types=1);
+require_once __DIR__.'/../../includes/auth.php';require_once __DIR__.'/../../config/db.php';
+if(empty($_SESSION['is_super'])){http_response_code(403);exit('Access denied.');}if($_SERVER['REQUEST_METHOD']!=='POST'){header('Location: index.php');exit;}verify_csrf();
+try{$allowed=['company_name','company_type','currency','country','low_stock_threshold','invoice_prefix','receipt_prefix','purchase_prefix','delivery_prefix','expense_prefix','timezone'];$conn->beginTransaction();$s=$conn->prepare("INSERT INTO settings (setting_key,setting_value) VALUES (?,?) ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value)");foreach((array)($_POST['settings']??[]) as $k=>$v)if(in_array($k,$allowed,true))$s->execute([$k,trim((string)$v)]);$conn->commit();$_SESSION['settings_flash']='Settings saved successfully.';}catch(Throwable $e){if($conn->inTransaction())$conn->rollBack();$_SESSION['settings_flash']='Settings failed: '.$e->getMessage();}header('Location: index.php');exit;
