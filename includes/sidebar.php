@@ -45,8 +45,9 @@ $role = $_SESSION['role'] ?? 'Staff';
         <a href="<?= BASE_URL ?>/modules/suppliers/index.php" class="<?= navActive('/suppliers/') ?>"><i class="fas fa-truck icon-main"></i>Suppliers</a>
         <a href="<?= BASE_URL ?>/modules/purchases/index.php" class="<?= navActive('/purchases/') ?>"><i class="fas fa-cart-plus icon-main"></i>Purchases</a>
         <a href="<?= BASE_URL ?>/modules/sales/index.php" class="<?= navActive('/sales/') ?>"><i class="fas fa-cash-register icon-main"></i>Sales / POS</a>
-        <a href="<?= BASE_URL ?>/modules/payments/index.php" class="<?= navActive('/payments/') ?>"><i class="fas fa-money-check-alt icon-main"></i>Customer Payments</a>
+        <a href="<?= BASE_URL ?>/modules/customer_payments/index.php" class="<?= navActive('/customer_payments/') ?>"><i class="fas fa-money-check-alt icon-main"></i>Customer Payments</a>
         <a href="<?= BASE_URL ?>/modules/deliveries/index.php" class="<?= navActive('/deliveries/') ?>"><i class="fas fa-shipping-fast icon-main"></i>Deliveries</a>
+        <a href="<?= BASE_URL ?>/modules/stock_movements/index.php" class="<?= navActive('/stock_movements/') ?>"><i class="fas fa-exchange-alt icon-main"></i>Stock Movements</a>
         <a href="<?= BASE_URL ?>/modules/expenses/index.php" class="<?= navActive('/expenses/') ?>"><i class="fas fa-money-bill-wave icon-main"></i>Expenses</a>
 
         <div class="menu-title">Reports &amp; Analytics</div>
