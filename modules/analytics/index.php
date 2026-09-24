@@ -1,43 +1,11 @@
 <?php
-/**
- * Analytics Module
- * 
- * This module handles analytics and reporting for the alcohol distributor system.
- */
-
-// Start session and include necessary files
-session_start();
-
-// Include configuration and database connection
-// require_once '../../config/config.php';
-// require_once '../../config/database.php';
-
-// Check if user is authenticated
-// if (!isset($_SESSION['user_id'])) {
-//     header('Location: ../../login.php');
-//     exit;
-// }
-
-?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Analytics - Stable Stalk</title>
-    <link rel="stylesheet" href="../../assets/css/style.css">
-</head>
-<body>
-    <div class="container">
-        <h1>Analytics Dashboard</h1>
-        
-        <!-- Analytics content will go here -->
-        <div class="analytics-section">
-            <h2>Sales Overview</h2>
-            <!-- Add your analytics content here -->
-        </div>
-    </div>
-
-    <script src="../../assets/js/script.js"></script>
-</body>
-</html>
+declare(strict_types=1);
+require_once __DIR__.'/../../includes/auth.php';require_once __DIR__.'/../../config/db.php';
+$days=[];$values=[];$costs=[];
+for($i=29;$i>=0;$i--){$d=date('Y-m-d',strtotime("-$i days"));$days[]=$d;$q=$conn->prepare("SELECT COALESCE(SUM(total_amount),0) FROM sales WHERE sale_status='Completed' AND DATE(sale_date)=?");$q->execute([$d]);$values[]=(float)$q->fetchColumn();$q=$conn->prepare("SELECT COALESCE(SUM(si.quantity*si.buying_price),0) FROM sale_items si JOIN sales s ON s.id=si.sale_id WHERE s.sale_status='Completed' AND DATE(s.sale_date)=?");$q->execute([$d]);$costs[]=(float)$q->fetchColumn();}
+$top=$conn->query("SELECT p.product_name,SUM(si.quantity) qty,SUM(si.subtotal) revenue FROM sale_items si JOIN sales s ON s.id=si.sale_id JOIN products p ON p.id=si.product_id WHERE s.sale_status='Completed' AND s.sale_date>=DATE_SUB(CURDATE(),INTERVAL 30 DAY) GROUP BY p.id ORDER BY revenue DESC LIMIT 10")->fetchAll();$max=max($values?:[1]);$maxTop=0;foreach($top as $t)$maxTop=max($maxTop,(float)$t['revenue']);
+require_once __DIR__.'/../../includes/header.php';require_once __DIR__.'/../../includes/sidebar.php';?>
+<main class="content"><style>.panel{background:#fff;padding:20px;border-radius:12px;box-shadow:0 1px 4px #0001;margin-bottom:18px}.chart{height:300px;display:flex;align-items:end;gap:4px;border-bottom:1px solid #cbd5e1;padding:10px 0;overflow:hidden}.bar{flex:1;min-width:5px;background:#004a99;position:relative}.rows{display:grid;gap:10px}.row{display:grid;grid-template-columns:180px 1fr 120px;gap:10px;align-items:center}.track{height:16px;background:#e2e8f0;border-radius:10px;overflow:hidden}.fill{height:100%;background:#047857}@media(max-width:700px){.row{grid-template-columns:1fr}.chart{height:220px}}</style>
+<h1>Analytics</h1><p>Performance trends for the last 30 days.</p><div class="panel"><h3>Daily Sales Revenue</h3><div class="chart"><?php foreach($values as $i=>$v):?><div class="bar" style="height:<?=max(2,($v/$max)*100)?>%" title="<?=e($days[$i])?>: KES <?=number_format($v,2)?>"></div><?php endforeach;?></div><p style="color:#64748b;font-size:12px">Each bar represents one day, oldest to newest.</p></div>
+<div class="panel"><h3>Top Products — Last 30 Days</h3><div class="rows"><?php foreach($top as $t):?><div class="row"><strong><?=e($t['product_name'])?></strong><div class="track"><div class="fill" style="width:<?=max(1,((float)$t['revenue']/$maxTop)*100)?>%"></div></div><span>KES <?=number_format((float)$t['revenue'],2)?></span></div><?php endforeach;?></div></div></main>
+<?php require_once __DIR__.'/../../includes/footer.php';?>
