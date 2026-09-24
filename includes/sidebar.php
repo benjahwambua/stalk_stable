@@ -97,9 +97,6 @@ $role = $_SESSION['role'] ?? 'Staff';
         <?php if (canAccessModule('mpesa')): ?>
         <a href="<?= BASE_URL ?>/modules/mpesa/index.php" class="<?= navActive('/mpesa/') ?>"><i class="fas fa-mobile-alt icon-main"></i>M-PESA</a>
         <?php endif; ?>
-        <?php if (isSuperUser()): ?>
-        <?php endif; ?>
-
         <a href="<?= BASE_URL ?>/auth/logout.php" class="logout-link"><i class="fas fa-power-off icon-main"></i>Logout</a>
     </nav>
 </aside>
