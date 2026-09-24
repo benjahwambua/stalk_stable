@@ -17,7 +17,25 @@ try{
  if($code===0){
    $lookup=$conn->prepare("SELECT reference_type,reference_id FROM mpesa_transactions WHERE checkout_request_id=? LIMIT 1");
    $lookup->execute([$checkout]);$tx=$lookup->fetch();
-   if($tx && $tx['reference_type']==='sale' && (int)$tx['reference_id']>0){
+   if($tx && $tx['reference_type']==='customer_payment' && (int)$tx['reference_id']>0){
+      $customerId=(int)$tx['reference_id'];
+      $conn->beginTransaction();
+      $custQ=$conn->prepare("SELECT * FROM customers WHERE id=? FOR UPDATE");$custQ->execute([$customerId]);$customer=$custQ->fetch();
+      if($customer && $amount>0){
+         $payAmount=min($amount,(float)$customer['balance']);
+         if($payAmount>0){
+            $prefix=(string)($conn->query("SELECT setting_value FROM settings WHERE setting_key='receipt_prefix' LIMIT 1")->fetchColumn()?:'SS-RCP');
+            $rc=$prefix.'-'.date('YmdHis').'-'.strtoupper(bin2hex(random_bytes(2)));
+            $exists=$conn->prepare("SELECT COUNT(*) FROM customer_payments WHERE customer_id=? AND transaction_reference=?");$exists->execute([$customerId,$receipt]);
+            if((int)$exists->fetchColumn()===0){
+               $ins=$conn->prepare("INSERT INTO customer_payments(receipt_number,customer_id,sale_id,user_id,amount,payment_method,transaction_reference,payment_date,notes) VALUES(?,?,?,?,?,?,?,?,?)");
+               $ins->execute([$rc,$customerId,null,(int)($_SESSION['user_id']??1),$payAmount,'M-Pesa',$receipt,date('Y-m-d H:i:s'),'Automatic M-PESA credit payment']);
+               $upd=$conn->prepare("UPDATE customers SET balance=GREATEST(0,balance-?) WHERE id=?");$upd->execute([$payAmount,$customerId]);
+            }
+         }
+      }
+      $conn->commit();
+   } elseif($tx && $tx['reference_type']==='sale' && (int)$tx['reference_id']>0){
       $saleId=(int)$tx['reference_id'];
       $conn->beginTransaction();
       $saleQ=$conn->prepare("SELECT * FROM sales WHERE id=? FOR UPDATE");$saleQ->execute([$saleId]);$sale=$saleQ->fetch();
