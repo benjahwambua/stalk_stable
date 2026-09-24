@@ -1,18 +1,21 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__.'/../../includes/auth.php'; require_once __DIR__.'/../../config/db.php';
+require_once __DIR__.'/../../config/mpesa.php';
 if($_SERVER['REQUEST_METHOD']!=='POST'){header('Location: index.php');exit;} verify_csrf();
 try{
 $cart=json_decode((string)($_POST['cart_json']??''),true); if(!is_array($cart)||!$cart)throw new RuntimeException('Add at least one product.');
 $customerId=(int)($_POST['customer_id']??0);$customerId=$customerId>0?$customerId:null;
-$method=(string)($_POST['payment_method']??'Cash');if(!in_array($method,['Cash','M-Pesa','Bank','Credit','Mixed'],true))throw new RuntimeException('Invalid payment method.');
+$method=(string)($_POST['payment_method']??'Cash');
+$mpesaPhone=trim((string)($_POST['mpesa_phone']??''));if(!in_array($method,['Cash','M-Pesa','Bank','Credit','Mixed'],true))throw new RuntimeException('Invalid payment method.');
 $discount=max(0,(float)($_POST['discount']??0));$tax=max(0,(float)($_POST['tax']??0));$paid=max(0,(float)($_POST['paid_amount']??0));$notes=trim((string)($_POST['notes']??''));
 $conn->beginTransaction();
 $customer=null;if($customerId){$s=$conn->prepare("SELECT * FROM customers WHERE id=? AND status='Active' FOR UPDATE");$s->execute([$customerId]);$customer=$s->fetch();if(!$customer)throw new RuntimeException('Customer not found or inactive.');}
 $lines=[];$subtotal=0.0;
 foreach($cart as $item){$pid=(int)($item['id']??0);$qty=(float)($item['qty']??0);if($pid<=0||$qty<=0||$qty!=round($qty))throw new RuntimeException('Invalid product quantity.');$s=$conn->prepare("SELECT * FROM products WHERE id=? AND status='Active' FOR UPDATE");$s->execute([$pid]);$p=$s->fetch();if(!$p)throw new RuntimeException('A selected product is unavailable.');if((float)$p['stock_quantity']<$qty)throw new RuntimeException('Insufficient stock for '.$p['product_name'].'. Available: '.$p['stock_quantity']);$price=(float)$p['selling_price'];$line=$price*$qty;$subtotal+=$line;$lines[]=['p'=>$p,'qty'=>$qty,'price'=>$price,'subtotal'=>$line];}
 $total=max(0,$subtotal-$discount+$tax);if($paid>$total+0.001)throw new RuntimeException('Amount paid cannot exceed the sale total.');$balance=round($total-$paid,2);
-if($method==='Credit'&&$balance<=0)throw new RuntimeException('A credit sale must have an outstanding balance.');if($balance>0&&!$customer)throw new RuntimeException('Select a customer for any sale with an outstanding balance.');
+if($method==='Credit'&&$balance<=0)throw new RuntimeException('A credit sale must have an outstanding balance.');
+if($method==='M-Pesa'){if(!$customerId)throw new RuntimeException('Select a customer for an M-PESA sale.');if($mpesaPhone==='')throw new RuntimeException('Enter the customer M-PESA phone number.');$paid=0;$balance=$total;}if($balance>0&&!$customer)throw new RuntimeException('Select a customer for any sale with an outstanding balance.');
 if($customer&&$balance>0){$available=(float)$customer['credit_limit']-(float)$customer['balance'];if($balance>$available+0.001)throw new RuntimeException('Credit limit exceeded. Available credit: KES '.number_format(max(0,$available),2));}
 $prefix=(string)($conn->query("SELECT setting_value FROM settings WHERE setting_key='invoice_prefix' LIMIT 1")->fetchColumn()?:'SS-INV');$invoice=$prefix.'-'.date('YmdHis').'-'.strtoupper(bin2hex(random_bytes(2)));
 $uid=(int)$_SESSION['user_id'];$s=$conn->prepare("INSERT INTO sales (invoice_number,customer_id,user_id,sale_date,subtotal,discount,tax,total_amount,paid_amount,balance,payment_method,sale_status,notes) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)");$s->execute([$invoice,$customerId,$uid,date('Y-m-d H:i:s'),$subtotal,$discount,$tax,$total,$paid,$balance,$method,'Completed',$notes?:null]);$saleId=(int)$conn->lastInsertId();
