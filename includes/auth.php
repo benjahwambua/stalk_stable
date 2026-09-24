@@ -31,13 +31,13 @@ function roleModules(): array
         'Admin' => [
             'products', 'categories', 'brands',
             'customers', 'suppliers', 'purchases', 'sales',
-            'customer_payments', 'deliveries', 'stock_movements', 'expenses',
+            'customer_payments', 'supplier_payments', 'deliveries', 'stock_movements', 'expenses',
             'reports', 'analytics', 'supply_chain', 'mpesa'
         ],
         'Manager' => [
             'products', 'categories', 'brands',
             'customers', 'suppliers', 'purchases', 'sales',
-            'customer_payments', 'deliveries', 'stock_movements', 'expenses',
+            'customer_payments', 'supplier_payments', 'deliveries', 'stock_movements', 'expenses',
             'reports', 'analytics', 'supply_chain', 'mpesa'
         ],
         'Sales' => [
