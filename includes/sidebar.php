@@ -48,7 +48,7 @@ $role = $_SESSION['role'] ?? 'Staff';
         <?php endif; ?>
         <?php endif; ?>
 
-        <?php if (canAccessModule('customers') || canAccessModule('suppliers') || canAccessModule('purchases') || canAccessModule('sales') || canAccessModule('customer_payments') || canAccessModule('deliveries') || canAccessModule('stock_movements') || canAccessModule('expenses')): ?>
+        <?php if (canAccessModule('customers') || canAccessModule('suppliers') || canAccessModule('purchases') || canAccessModule('sales') || canAccessModule('customer_payments') || canAccessModule('supplier_payments') || canAccessModule('deliveries') || canAccessModule('stock_movements') || canAccessModule('expenses')): ?>
         <div class="menu-title">Operations</div>
         <?php if (canAccessModule('customers')): ?>
         <a href="<?= BASE_URL ?>/modules/customers/index.php" class="<?= navActive('/customers/') ?>"><i class="fas fa-users icon-main"></i>Customers</a>
@@ -67,6 +67,9 @@ $role = $_SESSION['role'] ?? 'Staff';
         <?php endif; ?>
         <?php if (canAccessModule('customer_payments')): ?>
         <a href="<?= BASE_URL ?>/modules/customer_payments/index.php" class="<?= navActive('/customer_payments/') ?>"><i class="fas fa-money-check-alt icon-main"></i>Customer Payments</a>
+        <?php endif; ?>
+        <?php if (canAccessModule('supplier_payments')): ?>
+        <a href="<?= BASE_URL ?>/modules/supplier_payments/index.php" class="<?= navActive('/supplier_payments/') ?>"><i class="fas fa-file-invoice-dollar icon-main"></i>Supplier Payments</a>
         <?php endif; ?>
         <?php if (canAccessModule('deliveries')): ?>
         <a href="<?= BASE_URL ?>/modules/deliveries/index.php" class="<?= navActive('/deliveries/') ?>"><i class="fas fa-shipping-fast icon-main"></i>Deliveries</a>
