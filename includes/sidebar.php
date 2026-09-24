@@ -35,26 +35,58 @@ $role = $_SESSION['role'] ?? 'Staff';
     <nav>
         <a href="<?= BASE_URL ?>/index.php" class="<?= navActive('/index.php') ?>"><i class="fas fa-th-large icon-main"></i>Dashboard</a>
 
+        <?php if (canAccessModule('products') || canAccessModule('categories') || canAccessModule('brands')): ?>
         <div class="menu-title">Inventory</div>
+        <?php if (canAccessModule('products')): ?>
         <a href="<?= BASE_URL ?>/modules/products/index.php" class="<?= navActive('/products/') ?>"><i class="fas fa-box icon-main"></i>Products</a>
+        <?php endif; ?>
+        <?php if (canAccessModule('categories')): ?>
         <a href="<?= BASE_URL ?>/modules/categories/index.php" class="<?= navActive('/categories/') ?>"><i class="fas fa-tags icon-main"></i>Categories</a>
+        <?php endif; ?>
+        <?php if (canAccessModule('brands')): ?>
         <a href="<?= BASE_URL ?>/modules/brands/index.php" class="<?= navActive('/brands/') ?>"><i class="fas fa-star icon-main"></i>Brands</a>
+        <?php endif; ?>
+        <?php endif; ?>
 
+        <?php if (canAccessModule('customers') || canAccessModule('suppliers') || canAccessModule('purchases') || canAccessModule('sales') || canAccessModule('customer_payments') || canAccessModule('deliveries') || canAccessModule('stock_movements') || canAccessModule('expenses')): ?>
         <div class="menu-title">Operations</div>
+        <?php if (canAccessModule('customers')): ?>
         <a href="<?= BASE_URL ?>/modules/customers/index.php" class="<?= navActive('/customers/') ?>"><i class="fas fa-users icon-main"></i>Customers</a>
+        <?php endif; ?>
+        <?php if (canAccessModule('suppliers')): ?>
         <a href="<?= BASE_URL ?>/modules/suppliers/index.php" class="<?= navActive('/suppliers/') ?>"><i class="fas fa-truck icon-main"></i>Suppliers</a>
+        <?php endif; ?>
+        <?php if (canAccessModule('purchases')): ?>
         <a href="<?= BASE_URL ?>/modules/purchases/index.php" class="<?= navActive('/purchases/') ?>"><i class="fas fa-cart-plus icon-main"></i>Purchases</a>
+        <?php endif; ?>
+        <?php if (canAccessModule('sales')): ?>
         <a href="<?= BASE_URL ?>/modules/sales/index.php" class="<?= navActive('/sales/') ?>"><i class="fas fa-cash-register icon-main"></i>Sales / POS</a>
+        <?php endif; ?>
+        <?php if (canAccessModule('customer_payments')): ?>
         <a href="<?= BASE_URL ?>/modules/customer_payments/index.php" class="<?= navActive('/customer_payments/') ?>"><i class="fas fa-money-check-alt icon-main"></i>Customer Payments</a>
+        <?php endif; ?>
+        <?php if (canAccessModule('deliveries')): ?>
         <a href="<?= BASE_URL ?>/modules/deliveries/index.php" class="<?= navActive('/deliveries/') ?>"><i class="fas fa-shipping-fast icon-main"></i>Deliveries</a>
+        <?php endif; ?>
+        <?php if (canAccessModule('stock_movements')): ?>
         <a href="<?= BASE_URL ?>/modules/stock_movements/index.php" class="<?= navActive('/stock_movements/') ?>"><i class="fas fa-exchange-alt icon-main"></i>Stock Movements</a>
+        <?php endif; ?>
+        <?php if (canAccessModule('expenses')): ?>
         <a href="<?= BASE_URL ?>/modules/expenses/index.php" class="<?= navActive('/expenses/') ?>"><i class="fas fa-money-bill-wave icon-main"></i>Expenses</a>
+        <?php endif; ?>
+        <?php endif; ?>
 
+        <?php if (canAccessModule('reports') || canAccessModule('analytics')): ?>
         <div class="menu-title">Reports &amp; Analytics</div>
+        <?php if (canAccessModule('reports')): ?>
         <a href="<?= BASE_URL ?>/modules/reports/index.php" class="<?= navActive('/reports/') ?>"><i class="fas fa-chart-bar icon-main"></i>Reports</a>
+        <?php endif; ?>
+        <?php if (canAccessModule('analytics')): ?>
         <a href="<?= BASE_URL ?>/modules/analytics/index.php" class="<?= navActive('/analytics/') ?>"><i class="fas fa-chart-line icon-main"></i>Analytics</a>
+        <?php endif; ?>
+        <?php endif; ?>
 
-        <?php if ($isSuperUser): ?>
+        <?php if (isSuperUser()): ?>
         <div class="menu-title">Administration</div>
         <a href="<?= BASE_URL ?>/modules/users/index.php" class="<?= navActive('/users/') ?>"><i class="fas fa-users-cog icon-main"></i>Users</a>
         <a href="<?= BASE_URL ?>/modules/settings/index.php" class="<?= navActive('/settings/') ?>"><i class="fas fa-cogs icon-main"></i>Settings</a>
