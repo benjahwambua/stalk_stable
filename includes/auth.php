@@ -48,7 +48,7 @@ function roleModules(): array
         ],
         'Storekeeper' => [
             'products', 'categories', 'brands', 'suppliers',
-            'purchases', 'stock_movements', 'deliveries'
+            'purchases', 'stock_movements', 'deliveries', 'supply_chain'
         ],
         'Driver' => [
             'deliveries'
