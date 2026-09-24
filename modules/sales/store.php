@@ -26,5 +26,18 @@ if($paid>0){$rp=(string)($conn->query("SELECT setting_value FROM settings WHERE 
 $s->execute([$receipt,$customerId,$saleId,$uid,$paid,$paymentMethod,date('Y-m-d H:i:s'),'Payment for '.$invoice.' (Sale method: '.$method.')']);}
 if($customerId&&$paid>0&&$balance<=0){$s=$conn->prepare("UPDATE customers SET balance=GREATEST(0,balance) WHERE id=?");$s->execute([$customerId]);}
 $log=$conn->prepare("INSERT INTO activity_logs (user_id,action,module,description,ip_address) VALUES (?,?,?,?,?)");$log->execute([$uid,'Create','Sales','Created sale '.$invoice.' for KES '.number_format($total,2),$_SERVER['REMOTE_ADDR']??null]);
-$conn->commit();$_SESSION['sale_flash']='Sale '.$invoice.' completed successfully. Total KES '.number_format($total,2).'.';header('Location: receipt.php?id='.$saleId);exit;
+$conn->commit();
+if($method==='M-Pesa'){
+    try{
+        $response=mpesaStkPush($total,$mpesaPhone,$invoice,'Payment '.$invoice);
+        $tx=$conn->prepare("INSERT INTO mpesa_transactions(transaction_type,direction,phone_number,amount,account_reference,merchant_request_id,checkout_request_id,result_code,result_description,result_status,reference_type,reference_id,raw_response) VALUES('STK Push','Incoming',?,?,?,?,?,?,?,?,?,?,?)");
+        $tx->execute([$mpesaPhone,$total,$invoice,$response['MerchantRequestID']??null,$response['CheckoutRequestID']??null,(string)($response['ResponseCode']??''),(string)($response['ResponseDescription']??''),!empty($response['CheckoutRequestID'])?'Pending':'Failed','sale',$saleId,json_encode($response)]);
+        $_SESSION['sale_flash']='Sale '.$invoice.' created. M-PESA STK Push sent to '.$mpesaPhone.'. Awaiting payment confirmation.';
+    }catch(Throwable $mpesaError){
+        $_SESSION['sale_flash']='Sale '.$invoice.' was recorded but the M-PESA request could not be sent: '.$mpesaError->getMessage();
+    }
+}else{
+    $_SESSION['sale_flash']='Sale '.$invoice.' completed successfully. Total KES '.number_format($total,2).'.';
+}
+header('Location: receipt.php?id='.$saleId);exit;
 }catch(Throwable $e){if($conn->inTransaction())$conn->rollBack();$_SESSION['sale_flash']='Sale failed: '.$e->getMessage();header('Location: index.php');exit;}
