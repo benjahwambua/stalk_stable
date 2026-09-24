@@ -8,7 +8,8 @@ $pageTitle = 'Dashboard';
 
 function scalar(PDO $db, string $sql): int|float
 {
-    return $db->query($sql)->fetchColumn() ?: 0;
+    $value = $db->query($sql)->fetchColumn();
+    return is_numeric($value) ? (float)$value : 0;
 }
 
 $totalProducts = (int)scalar($conn, "SELECT COUNT(*) FROM products WHERE status = 'Active'");
