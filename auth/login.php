@@ -22,10 +22,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt = $conn->prepare(
             "SELECT id, full_name, username, email, password, role, is_super, status
              FROM users
-             WHERE (username = :login OR email = :login)
+             WHERE (username = :username OR email = :email)
              LIMIT 1"
         );
-        $stmt->execute([':login' => $loginValue]);
+        $stmt->execute([':username' => $loginValue, ':email' => $loginValue]);
         $user = $stmt->fetch();
 
         if (!$user || !password_verify($password, (string)$user['password'])) {
