@@ -32,13 +32,13 @@ function roleModules(): array
             'products', 'categories', 'brands',
             'customers', 'suppliers', 'purchases', 'sales',
             'customer_payments', 'deliveries', 'stock_movements', 'expenses',
-            'reports', 'analytics'
+            'reports', 'analytics', 'supply_chain', 'mpesa'
         ],
         'Manager' => [
             'products', 'categories', 'brands',
             'customers', 'suppliers', 'purchases', 'sales',
             'customer_payments', 'deliveries', 'stock_movements', 'expenses',
-            'reports', 'analytics'
+            'reports', 'analytics', 'supply_chain', 'mpesa'
         ],
         'Sales' => [
             'customers', 'sales', 'customer_payments', 'deliveries', 'reports'
