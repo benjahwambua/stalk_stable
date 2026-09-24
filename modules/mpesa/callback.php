@@ -29,7 +29,7 @@ try{
             $exists=$conn->prepare("SELECT COUNT(*) FROM customer_payments WHERE customer_id=? AND transaction_reference=?");$exists->execute([$customerId,$receipt]);
             if((int)$exists->fetchColumn()===0){
                $ins=$conn->prepare("INSERT INTO customer_payments(receipt_number,customer_id,sale_id,user_id,amount,payment_method,transaction_reference,payment_date,notes) VALUES(?,?,?,?,?,?,?,?,?)");
-               $ins->execute([$rc,$customerId,null,(int)($_SESSION['user_id']??1),$payAmount,'M-Pesa',$receipt,date('Y-m-d H:i:s'),'Automatic M-PESA credit payment']);
+               $ins->execute([$rc,$customerId,null,(int)($conn->query("SELECT id FROM users ORDER BY id LIMIT 1")->fetchColumn() ?: 1),$payAmount,'M-Pesa',$receipt,date('Y-m-d H:i:s'),'Automatic M-PESA credit payment']);
                $upd=$conn->prepare("UPDATE customers SET balance=GREATEST(0,balance-?) WHERE id=?");$upd->execute([$payAmount,$customerId]);
             }
          }
