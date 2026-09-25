@@ -7,6 +7,10 @@ if($_SERVER['REQUEST_METHOD']==='GET'){
  header('Content-Type: application/json');
  try{$id=(int)($_GET['id']??0);$st=$conn->prepare("SELECT poi.id,poi.product_id,p.product_name,p.sku,poi.ordered_quantity,poi.received_quantity,poi.unit_cost,(poi.ordered_quantity-poi.received_quantity) outstanding FROM purchase_order_items poi JOIN products p ON p.id=poi.product_id WHERE poi.purchase_order_id=? AND poi.ordered_quantity>poi.received_quantity ORDER BY poi.id");$st->execute([$id]);echo json_encode(['ok'=>true,'items'=>$st->fetchAll()]);}catch(Throwable $e){http_response_code(400);echo json_encode(['ok'=>false,'message'=>$e->getMessage()]);}exit;
 }
+if($_SERVER['REQUEST_METHOD']==='GET' && isset($_GET['grn_id'])){
+ header('Content-Type: application/json');
+ try{$id=(int)$_GET['grn_id'];$q=$conn->prepare("SELECT gr.*,po.po_number,s.supplier_name,u.full_name FROM goods_receipts gr JOIN purchase_orders po ON po.id=gr.purchase_order_id JOIN suppliers s ON s.id=gr.supplier_id JOIN users u ON u.id=gr.user_id WHERE gr.id=?");$q->execute([$id]);$gr=$q->fetch();if(!$gr)throw new RuntimeException('GRN not found.');$q=$conn->prepare("SELECT gri.*,p.product_name,p.sku FROM goods_receipt_items gri JOIN products p ON p.id=gri.product_id WHERE gri.goods_receipt_id=? ORDER BY gri.id");$q->execute([$id]);echo json_encode(['ok'=>true,'grn'=>$gr,'items'=>$q->fetchAll()]);}catch(Throwable $e){http_response_code(404);echo json_encode(['ok'=>false,'message'=>$e->getMessage()]);}exit;
+}
 if($_SERVER['REQUEST_METHOD']!=='POST'){header('Location:index.php');exit;}verify_csrf();
 try{
  $poId=(int)($_POST['purchase_order_id']??0);$receivedDate=trim((string)($_POST['received_date']??''));$invoice=trim((string)($_POST['supplier_invoice']??''));$delivery=trim((string)($_POST['delivery_note']??''));$notes=trim((string)($_POST['notes']??''));$items=$_POST['items']??[];
