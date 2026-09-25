@@ -4,7 +4,7 @@ require_once __DIR__.'/../../includes/auth.php';
 require_once __DIR__.'/../../config/db.php';
 $pageTitle='Supermarket POS';
 
-$products=$conn->query("SELECT p.id,p.product_name,p.sku,p.barcode,p.selling_price,p.wholesale_price,p.stock_quantity,p.unit,b.brand_name FROM products p LEFT JOIN brands b ON b.id=p.brand_id WHERE p.status='Active' ORDER BY p.product_name")->fetchAll();
+$products=$conn->query("SELECT p.id,p.product_name,p.category,p.sku,p.barcode,p.selling_price,p.wholesale_price,p.stock_quantity,p.unit,b.brand_name FROM products p LEFT JOIN brands b ON b.id=p.brand_id WHERE p.status='Active' ORDER BY p.product_name")->fetchAll();
 $customers=$conn->query("SELECT id,customer_name,phone,credit_limit,balance FROM customers WHERE status='Active' ORDER BY customer_name")->fetchAll();
 $categories=$conn->query("SELECT DISTINCT category FROM products WHERE status='Active' AND category IS NOT NULL AND category<>'' ORDER BY category")->fetchAll(PDO::FETCH_COLUMN);
 $stats=[
