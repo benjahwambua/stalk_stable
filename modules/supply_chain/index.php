@@ -40,6 +40,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 <tr><td><strong><?=e($po['po_number'])?></strong></td><td><?=e(date('d M Y',strtotime($po['po_date'])))?></td><td><?=e($po['supplier_name'])?></td><td>KES <?=number_format((float)$po['total_amount'],2)?></td><td><?=number_format((int)$po['outstanding_qty'])?></td><td><?=e($po['full_name'])?></td><td><span class="badge <?=$cls?>"><?=e($po['status'])?></span></td><td class="actions"><a class="btn light" target="_blank" href="po.php?id=<?= (int)$po['id']?>">View PO</a>
 <?php if($po['status']==='Draft'):?><form method="post" action="approve.php"><input type="hidden" name="csrf_token" value="<?=e(csrf_token())?>"><input type="hidden" name="id" value="<?=$po['id']?>"><button class="btn success">Approve</button></form><?php endif;?>
 <?php if(in_array($po['status'],['Approved','Partially Received'],true)):?><button class="btn warning" onclick="openReceive(<?= (int)$po['id']?>)">Receive Goods</button><?php endif;?>
+<?php if($po['status']==='Fully Received'): ?><a class="btn light" href="grn_list.php?po_id=<?= (int)$po['id']?>">GRNs</a><?php endif;?>
 </td></tr>
 <?php endforeach;endif;?>
 </tbody></table></div></div>
