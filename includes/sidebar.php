@@ -58,9 +58,9 @@ $role = $_SESSION['role'] ?? 'Staff';
         <?php endif; ?>
         <?php if (canAccessModule('purchases')): ?>
         <a href="<?= BASE_URL ?>/modules/purchases/index.php" class="<?= navActive('/purchases/') ?>"><i class="fas fa-cart-plus icon-main"></i>Purchases</a>
+        <?php endif; ?>
         <?php if (canAccessModule('supply_chain')): ?>
         <a href="<?= BASE_URL ?>/modules/supply_chain/index.php" class="<?= navActive('/supply_chain/') ?>"><i class="fas fa-project-diagram icon-main"></i>Supply Chain</a>
-        <?php endif; ?>
         <?php endif; ?>
         <?php if (canAccessModule('sales')): ?>
         <a href="<?= BASE_URL ?>/modules/sales/index.php" class="<?= navActive('/sales/') ?>"><i class="fas fa-cash-register icon-main"></i>Sales / POS</a>
