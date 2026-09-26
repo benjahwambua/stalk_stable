@@ -29,6 +29,9 @@ try{
 
  $stmt=$conn->prepare("INSERT INTO products(product_name,category,category_id,brand_id,supplier_id,sku,barcode,unit,buying_price,selling_price,wholesale_price,stock_quantity,reorder_level,icon,status) VALUES(:name,:category,:category_id,:brand,:supplier,:sku,:barcode,:unit,:buy,:sell,:wholesale,:stock,:reorder,:icon,'Active')");
  $stmt->execute([':name'=>$name,':category'=>$categoryName,':category_id'=>$categoryId?:null,':brand'=>$brandId?:null,':supplier'=>$supplierId?:null,':sku'=>$sku,':barcode'=>$barcode,':unit'=>$unit,':buy'=>$buy,':sell'=>$sell,':wholesale'=>$wholesale,':stock'=>$stock,':reorder'=>$reorder,':icon'=>$icon]);
+$productId=(int)$conn->lastInsertId();
+$sync=$conn->prepare("INSERT INTO product_prices(price_list_id,product_id,min_quantity,price) SELECT id,?,1,? FROM price_lists WHERE code=? ON DUPLICATE KEY UPDATE price=VALUES(price)");
+$sync->execute([$productId,$sell,'normal']);if($wholesale>0)$sync->execute([$productId,$wholesale,'wholesale']);
  $_SESSION['product_flash']='Product created successfully.';
 }catch(Throwable $e){error_log($e->getMessage());$_SESSION['product_flash']='Product could not be saved: '.$e->getMessage();}
 header('Location: index.php'); exit;
