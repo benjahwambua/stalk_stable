@@ -4,7 +4,7 @@ require_once __DIR__.'/../../includes/auth.php';
 require_once __DIR__.'/../../config/db.php';
 $id=(int)($_GET['id']??0);
 if($id<=0){header('Location: index.php');exit;}
-$s=$conn->prepare("SELECT s.*,COALESCE(c.customer_name,'Walk-in Customer') customer_name,c.phone,c.address,u.full_name cashier FROM sales s LEFT JOIN customers c ON c.id=s.customer_id LEFT JOIN users u ON u.id=s.user_id WHERE s.id=? AND s.sale_status='Completed'");
+$s=$conn->prepare("SELECT s.*,pl.name price_list_name,COALESCE(c.customer_name,'Walk-in Customer') customer_name,c.phone,c.address,u.full_name cashier FROM sales s LEFT JOIN price_lists pl ON pl.id=s.price_list_id LEFT JOIN customers c ON c.id=s.customer_id LEFT JOIN users u ON u.id=s.user_id WHERE s.id=? AND s.sale_status='Completed'");
 $s->execute([$id]);$sale=$s->fetch();
 if(!$sale){http_response_code(404);exit('Sale not found.');}
 $i=$conn->prepare("SELECT si.quantity,si.price,si.subtotal,p.product_name,p.sku,p.unit FROM sale_items si JOIN products p ON p.id=si.product_id WHERE si.sale_id=? ORDER BY si.id");$i->execute([$id]);$items=$i->fetchAll();
@@ -19,7 +19,7 @@ body{margin:0;background:#eef2f7;font-family:Arial,sans-serif;color:#111827}.act
 <div class="receipt">
 <?php if($flash): ?><div class="flash"><?=e($flash)?></div><?php endif; ?>
 <div class="center"><div class="company"><?=e($company)?></div><div class="small">Alcohol Distribution Management System</div></div>
-<div class="line"></div><div class="meta"><strong>Receipt:</strong> <?=e($sale['invoice_number'])?><br><strong>Date:</strong> <?=e($sale['sale_date'])?><br><strong>Cashier:</strong> <?=e($sale['cashier']?:'Staff')?><br><strong>Customer:</strong> <?=e($sale['customer_name'])?><?php if($sale['phone']): ?> · <?=e($sale['phone'])?><?php endif; ?></div>
+<div class="line"></div><div class="meta"><strong>Receipt:</strong> <?=e($sale['invoice_number'])?><br><strong>Date:</strong> <?=e($sale['sale_date'])?><br><strong>Cashier:</strong> <?=e($sale['cashier']?:'Staff')?><br><strong>Price List:</strong> <?=e($sale['price_list_name']?:'Standard price')?><br><strong>Customer:</strong> <?=e($sale['customer_name'])?><?php if($sale['phone']): ?> · <?=e($sale['phone'])?><?php endif; ?></div>
 <div class="line"></div>
 <table class="items"><thead><tr><th>Item</th><th class="num">Qty</th><th class="num">Amount</th></tr></thead><tbody><?php foreach($items as $item): ?><tr><td><?=e($item['product_name'])?></td><td class="num"><?=e($item['quantity'])?></td><td class="num"><?=e($currency)?> <?=number_format((float)$item['subtotal'],2)?></td></tr><?php endforeach; ?></tbody></table>
 <div class="line"><div class="meta"><div><span>Subtotal</span><span style="float:right"><?=e($currency)?> <?=number_format((float)$sale['subtotal'],2)?></span></div><div><span>Discount</span><span style="float:right"><?=e($currency)?> <?=number_format((float)$sale['discount'],2)?></span></div><div><span>Tax</span><span style="float:right"><?=e($currency)?> <?=number_format((float)$sale['tax'],2)?></span></div><div class="total"><span>TOTAL</span><span style="float:right"><?=e($currency)?> <?=number_format((float)$sale['total_amount'],2)?></span></div><div><span>Paid</span><span style="float:right"><?=e($currency)?> <?=number_format((float)$sale['paid_amount'],2)?></span></div><div><span>Balance</span><span style="float:right"><?=e($currency)?> <?=number_format((float)$sale['balance'],2)?></span></div><div><span>Payment</span><span style="float:right"><?=e($sale['payment_method'])?></span></div></div></div>
