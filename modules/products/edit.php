@@ -17,7 +17,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
   $u=$conn->prepare("UPDATE products SET product_name=:name,category=:category,category_id=:category_id,brand_id=:brand,supplier_id=:supplier,sku=:sku,barcode=:barcode,unit=:unit,buying_price=:buy,selling_price=:sell,wholesale_price=:wholesale,stock_quantity=:stock,reorder_level=:reorder,icon=:icon,status=:status WHERE id=:id");
   $u->execute([':name'=>$name,':category'=>$categoryName,':category_id'=>$categoryId?:null,':brand'=>$brandId?:null,':supplier'=>$supplierId?:null,':sku'=>$sku,':barcode'=>$barcode,':unit'=>$unit,':buy'=>$buy,':sell'=>$sell,':wholesale'=>$wholesale,':stock'=>$stock,':reorder'=>$reorder,':icon'=>$icon,':status'=>$status,':id'=>$id]);
 $sync=$conn->prepare("INSERT INTO product_prices(price_list_id,product_id,min_quantity,price) SELECT id,?,1,? FROM price_lists WHERE code=? ON DUPLICATE KEY UPDATE price=VALUES(price)");
-$sync->execute([$id,$sell,'normal']);if($wholesale>0)$sync->execute([$id,$wholesale,'wholesale']);
+$sync->execute([id,$sell,'normal']);if($wholesale>0){$sync->execute([id,$wholesale,'wholesale']);}else{$del=$conn->prepare("DELETE FROM product_prices WHERE product_id=? AND min_quantity=1 AND price_list_id=(SELECT id FROM price_lists WHERE code='wholesale' LIMIT 1)");$del->execute([id]);}
   $_SESSION['product_flash']='Product updated successfully.';header('Location:index.php');exit;
  }catch(Throwable $e){$error=$e->getMessage();}
 }
