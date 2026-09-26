@@ -55,3 +55,17 @@ SELECT pl.id,p.id,1,p.wholesale_price
 FROM price_lists pl CROSS JOIN products p
 WHERE pl.code='wholesale' AND p.wholesale_price>0
 AND NOT EXISTS (SELECT 1 FROM product_prices pp WHERE pp.price_list_id=pl.id AND pp.product_id=p.id AND pp.min_quantity=1);
+
+
+-- Store the price list used on each completed sale for auditability and receipts.
+SET @has_sales_price_list := (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='sales' AND COLUMN_NAME='price_list_id');
+SET @sql_sales_price_list := IF(@has_sales_price_list=0,'ALTER TABLE sales ADD COLUMN price_list_id INT UNSIGNED NULL AFTER customer_id','SELECT 1');
+PREPARE stmt_sales_price_list FROM @sql_sales_price_list;
+EXECUTE stmt_sales_price_list;
+DEALLOCATE PREPARE stmt_sales_price_list;
+
+SET @has_sales_price_fk := (SELECT COUNT(*) FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='sales' AND COLUMN_NAME='price_list_id' AND REFERENCED_TABLE_NAME='price_lists');
+SET @sql_sales_price_fk := IF(@has_sales_price_fk=0,'ALTER TABLE sales ADD INDEX idx_sales_price_list (price_list_id), ADD CONSTRAINT fk_sales_price_list FOREIGN KEY (price_list_id) REFERENCES price_lists(id) ON DELETE SET NULL','SELECT 1');
+PREPARE stmt_sales_price_fk FROM @sql_sales_price_fk;
+EXECUTE stmt_sales_price_fk;
+DEALLOCATE PREPARE stmt_sales_price_fk;
