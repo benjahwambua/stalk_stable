@@ -6,7 +6,7 @@ if($_SERVER['REQUEST_METHOD']!=='POST'){header('Location: index.php');exit;} ver
 try{
 $cart=json_decode((string)($_POST['cart_json']??''),true); if(!is_array($cart)||!$cart)throw new RuntimeException('Add at least one product.');
 $customerId=(int)($_POST['customer_id']??0);$customerId=$customerId>0?$customerId:null;
-$method=(string)($_POST['payment_method']??'Cash');$priceListId=(int)($_POST['price_list_id']??0);if($priceListId<=0)$priceListId=(int)($conn->query("SELECT id FROM price_lists WHERE is_default=1 AND status='Active' LIMIT 1")->fetchColumn()?:0);
+$method=(string)($_POST['payment_method']??'Cash');$priceListId=(int)($_POST['price_list_id']??0);if($priceListId<=0)$priceListId=(int)($conn->query("SELECT id FROM price_lists WHERE is_default=1 AND status='Active' LIMIT 1")->fetchColumn()?:0);$pl=$conn->prepare("SELECT id FROM price_lists WHERE id=? AND status='Active'");$pl->execute([$priceListId]);if(!$pl->fetchColumn())throw new RuntimeException('Selected price list is not active.');
 $mpesaPhone=trim((string)($_POST['mpesa_phone']??''));if(!in_array($method,['Cash','M-Pesa','Bank','Credit','Mixed'],true))throw new RuntimeException('Invalid payment method.');
 $discount=max(0,(float)($_POST['discount']??0));$tax=max(0,(float)($_POST['tax']??0));$paid=max(0,(float)($_POST['paid_amount']??0));$notes=trim((string)($_POST['notes']??''));
 $conn->beginTransaction();
