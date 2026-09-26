@@ -37,7 +37,10 @@ $role = $_SESSION['role'] ?? 'Staff';
 
         <?php if (canAccessModule('products') || canAccessModule('categories') || canAccessModule('brands')): ?>
         <div class="menu-title">Inventory</div>
-        <?php if (canAccessModule('products')): ?>
+        <?php if (canAccessModule('price_lists')): ?>
+<a href="<?= BASE_URL ?>/modules/price_lists/index.php" class="<?= navActive('/price_lists/') ?>"><i class="fas fa-tags icon-main"></i>Price Lists</a>
+<?php endif; ?>
+<?php if (canAccessModule('products')): ?>
         <a href="<?= BASE_URL ?>/modules/products/index.php" class="<?= navActive('/products/') ?>"><i class="fas fa-box icon-main"></i>Products</a>
         <?php endif; ?>
         <?php if (canAccessModule('categories')): ?>
