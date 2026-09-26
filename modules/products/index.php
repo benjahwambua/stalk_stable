@@ -72,7 +72,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 
 <div class="table-card">
 <table class="products-table">
-<thead><tr><th>Product</th><th>Category</th><th>Brand</th><th>Supplier</th><th>Buy Price</th><th>Sell Price</th><th>Stock</th><th>Status</th><th>Actions</th></tr></thead>
+<thead><tr><th>Product</th><th>Category</th><th>Brand</th><th>Supplier</th><th>Buy Price</th><th>Normal Price</th><th>Wholesale Price</th><th>Stock</th><th>Status</th><th>Actions</th></tr></thead>
 <tbody>
 <?php if(!$products): ?><tr><td colspan="9" style="text-align:center;padding:45px;color:#64748b">No products found.</td></tr>
 <?php else: foreach($products as $p): $stock=(int)$p['stock_quantity']; ?>
@@ -80,7 +80,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 <td><div class="product-name"><span class="icon"><?=e($p['icon']?:'🍾')?></span><div><strong><?=e($p['product_name'])?></strong><br><small class="muted"><?=e($p['sku']?:'No SKU')?></small></div></div></td>
 <td><?=e($p['category_name']?:$p['category']?:'Uncategorized')?></td>
 <td><?=e($p['brand_name']?:'—')?></td><td><?=e($p['supplier_name']?:'—')?></td>
-<td>KES <?=number_format((float)$p['buying_price'],2)?></td><td>KES <?=number_format((float)$p['selling_price'],2)?></td>
+<td>KES <?=number_format((float)$p['buying_price'],2)?></td><td>KES <?=number_format((float)$p['selling_price'],2)?></td><td>KES <?=number_format((float)$p['wholesale_price'],2)?></td>
 <td><?php if($stock===0): ?><span class="stock-out">Out of stock</span><?php elseif($stock<=(int)$p['reorder_level']): ?><span class="stock-low">⚠ <?=$stock?></span><?php else:?><span class="stock-ok">✓ <?=$stock?></span><?php endif;?></td>
 <td><?=e($p['status'])?></td>
 <td><div class="actions"><a class="btn btn-edit" href="edit.php?id=<?=$p['id']?>"><i class="fas fa-edit"></i></a><a class="btn btn-danger" href="delete.php?id=<?=$p['id']?>" onclick="return confirm('Delete this product?')"><i class="fas fa-trash"></i></a></div></td>
